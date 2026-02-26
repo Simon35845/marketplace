@@ -1,4 +1,4 @@
-package com.grapefruitapps.marketplace;
+package com.grapefruitapps.marketplace.product;
 
 import org.springframework.stereotype.Component;
 
@@ -16,11 +16,10 @@ public class ProductMapper {
 
     public Product toEntity(ProductDto productDto){
         return new Product(
-                productDto.getId(),
-                productDto.getName(),
-                productDto.getPrice(),
-                productDto.getCategory(),
-                productDto.getDescription()
+                productDto.name(),
+                productDto.price(),
+                productDto.category(),
+                productDto.description()
         );
     }
 }

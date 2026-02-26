@@ -1,4 +1,4 @@
-package com.grapefruitapps.marketplace;
+package com.grapefruitapps.marketplace.product;
 
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
