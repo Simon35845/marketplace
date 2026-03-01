@@ -25,7 +25,9 @@ public class User {
     @Column(nullable = false)
     private String email;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = {
+            CascadeType.PERSIST, CascadeType.MERGE
+    })
     @JoinColumn(name = "address_id", nullable = false)
     private Address address;
 

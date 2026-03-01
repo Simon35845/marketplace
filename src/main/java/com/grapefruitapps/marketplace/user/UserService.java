@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserService {
@@ -42,7 +41,7 @@ public class UserService {
 
     @Transactional
     public UserDto createUser(UserDto userDto) {
-        log.info("Create new user");
+        log.info("Creating new user");
         User userToSave = userMapper.toEntity(userDto);
         Address savedAddress = findOrCreateAddress(userToSave.getAddress());
         userToSave.setAddress(savedAddress);
@@ -54,7 +53,7 @@ public class UserService {
 
     @Transactional
     public UserDto updateUser(Long id, UserDto userDto) {
-        log.info("Update user with id: {}", id);
+        log.info("Updating user with id: {}", id);
         if (!userRepository.existsById(id)) {
             log.warn("User with id {} not found in database", id);
             throw new EntityNotFoundException("Not found user by id: " + id);
@@ -71,7 +70,7 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
-        log.info("Delete user with id: {}", id);
+        log.info("Deleting user with id: {}", id);
         if (!userRepository.existsById(id)) {
             log.warn("User with id {} not found in database", id);
             throw new EntityNotFoundException("Not found user by id: " + id);
@@ -82,25 +81,16 @@ public class UserService {
     }
 
     private Address findOrCreateAddress(Address address) {
-        log.info("Finding or creating address: {} {} {} {} {}",
+        log.debug("Finding or creating address: {} {} {} {} {}",
                 address.getCountry(), address.getCity(), address.getStreet(),
                 address.getHouse(), address.getApartment());
-        Optional<Address> existingAddress = addressRepository.findExistingAddress(
+
+        return addressRepository.findExistingAddress(
                 address.getCountry(),
                 address.getCity(),
                 address.getStreet(),
                 address.getHouse(),
                 address.getApartment()
-        );
-
-        Address savedAddress;
-        if (existingAddress.isPresent()) {
-            savedAddress = existingAddress.get();
-            log.info("Address already exists, id: {}", savedAddress.getId());
-        } else {
-            savedAddress = addressRepository.save(address);
-            log.info("Address was created, id: {}", savedAddress.getId());
-        }
-        return savedAddress;
+        ).orElseGet(() -> addressRepository.save(address));
     }
 }

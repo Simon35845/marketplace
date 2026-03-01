@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "addresses",
         uniqueConstraints = @UniqueConstraint(columnNames = {
@@ -34,8 +37,8 @@ public class Address {
     @Column(nullable = false, length = 20)
     private String apartment;
 
-    @OneToOne(mappedBy = "address")
-    private User user;
+    @OneToMany(mappedBy = "address")
+    private List<User> users = new ArrayList<>();
 
     public Address(String country, String city, String street, String house, String apartment) {
         this.country = country;
