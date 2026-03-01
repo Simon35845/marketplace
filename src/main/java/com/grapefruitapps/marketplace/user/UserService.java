@@ -4,6 +4,7 @@ import com.grapefruitapps.marketplace.address.*;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +13,9 @@ import java.util.List;
 @Service
 public class UserService {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
+    public static final int DEFAULT_PAGE_SIZE = 10;
+    public static final int DEFAULT_PAGE_NUMBER = 0;
+
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final AddressRepository addressRepository;
@@ -32,9 +36,22 @@ public class UserService {
         return userMapper.toDto(user);
     }
 
-    public List<UserDto> getAllUsers() {
-        log.debug("Get all users");
-        List<User> users = userRepository.findAll();
+    public List<UserDto> searchAllByFilter(UserFilter userFilter) {
+        log.debug("Get all users by filter");
+        int pageSize = userFilter.pageSize() != null ? userFilter.pageSize() : DEFAULT_PAGE_SIZE;
+        int pageNumber = userFilter.pageNumber() != null ? userFilter.pageNumber() : DEFAULT_PAGE_NUMBER;
+        Pageable pageable = Pageable.ofSize(pageSize).withPage(pageNumber);
+
+        List<User> users = userRepository.searchAllByFilter(
+                userFilter.name(),
+                userFilter.phone(),
+                userFilter.email(),
+                userFilter.address().country(),
+                userFilter.address().city(),
+                userFilter.address().street(),
+                userFilter.address().house(),
+                pageable
+        );
         log.debug("Found {} users ", users.size());
         return users.stream().map(userMapper::toDto).toList();
     }

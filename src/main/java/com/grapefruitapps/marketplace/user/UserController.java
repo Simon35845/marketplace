@@ -1,5 +1,6 @@
 package com.grapefruitapps.marketplace.user;
 
+import com.grapefruitapps.marketplace.address.AddressFilter;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +22,33 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserDto>> getAllUsers() {
+    public ResponseEntity<List<UserDto>> getAllUsers(
+            @RequestParam(name = "name", required = false) String name,
+            @RequestParam(name = "phone", required = false) String phone,
+            @RequestParam(name = "email", required = false) String email,
+            @RequestParam(name = "country", required = false) String country,
+            @RequestParam(name = "city", required = false) String city,
+            @RequestParam(name = "street", required = false) String street,
+            @RequestParam(name = "house", required = false) String house,
+            @RequestParam(name = "pageSize", required = false) Integer pageSize,
+            @RequestParam(name = "pageNumber", required = false) Integer pageNumber
+    ) {
+        UserFilter userFilter = new UserFilter(
+                name,
+                phone,
+                email,
+                new AddressFilter(
+                        country,
+                        city,
+                        street,
+                        house
+                ),
+                pageSize,
+                pageNumber
+        );
+
         log.info("Called getAllUsers");
-        return ResponseEntity.ok(userService.getAllUsers());
+        return ResponseEntity.ok(userService.searchAllByFilter(userFilter));
     }
 
     @GetMapping("/{id}")
