@@ -10,13 +10,13 @@ import java.util.Optional;
 @Repository
 public interface AddressRepository extends JpaRepository<Address, Long> {
     @Query("""
-        SELECT a FROM Address a
-        WHERE a.country = :country
-        AND a.city = :city
-        AND a.street = :street
-        AND a.house = :house
-        AND a.apartment = :apartment
-        """)
+            select a from Address a
+            where a.country = :country
+            and a.city = :city
+            and a.street = :street
+            and a.house = :house
+            and a.apartment = :apartment
+            """)
     Optional<Address> findExistingAddress(
             @Param("country") String country,
             @Param("city") String city,
