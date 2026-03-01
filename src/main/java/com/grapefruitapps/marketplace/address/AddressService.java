@@ -2,10 +2,10 @@ package com.grapefruitapps.marketplace.address;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AddressService {
@@ -23,16 +23,25 @@ public class AddressService {
         return addresses.stream().map(addressMapper::toDto).toList();
     }
 
-    public AddressDto createAddress(AddressDto addressDto){
+    public AddressDto createAddress(AddressDto addressDto) {
         log.info("Create new address");
         Address addressToSave = addressMapper.toEntity(addressDto);
+
+        Optional<Address> existingAddress = addressRepository.findExistingAddress(
+                addressToSave.getCountry(),
+                addressToSave.getCity(),
+                addressToSave.getStreet(),
+                addressToSave.getHouse(),
+                addressToSave.getApartment()
+        );
+
         Address savedAddress;
-        try {
+        if (existingAddress.isPresent()) {
+            savedAddress = existingAddress.get();
+            log.info("Address already exists, id: {}", savedAddress.getId());
+        } else {
             savedAddress = addressRepository.save(addressToSave);
             log.info("Address was created, id: {}", savedAddress.getId());
-        } catch (DataIntegrityViolationException e) {
-            log.warn("Saving address exception");
-            throw new IllegalStateException("Address already exists");
         }
         return addressMapper.toDto(savedAddress);
     }

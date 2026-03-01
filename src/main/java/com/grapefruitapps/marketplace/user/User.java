@@ -1,5 +1,6 @@
 package com.grapefruitapps.marketplace.user;
 
+import com.grapefruitapps.marketplace.address.Address;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,9 +25,14 @@ public class User {
     @Column(nullable = false)
     private String email;
 
-    public User(String name, String phone, String email) {
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "address_id", nullable = false)
+    private Address address;
+
+    public User(String name, String phone, String email, Address address) {
         this.name = name;
         this.phone = phone;
         this.email = email;
+        this.address = address;
     }
 }

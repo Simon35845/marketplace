@@ -34,6 +34,9 @@ public class Address {
     @Column(nullable = false, length = 20)
     private String apartment;
 
+    @OneToOne(mappedBy = "address")
+    private User user;
+
     public Address(String country, String city, String street, String house, String apartment) {
         this.country = country;
         this.city = city;

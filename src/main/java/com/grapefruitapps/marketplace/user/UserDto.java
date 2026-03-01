@@ -1,5 +1,6 @@
 package com.grapefruitapps.marketplace.user;
 
+import com.grapefruitapps.marketplace.address.AddressDto;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -17,6 +18,8 @@ public record UserDto(
         String phone,
         @NotNull
         @Size(min = 10, max = 50, message = "Email must be between 10 and 50 characters")
-        String email
+        String email,
+        @NotNull(message = "User must have an address")
+        AddressDto address
 ) {
 }
