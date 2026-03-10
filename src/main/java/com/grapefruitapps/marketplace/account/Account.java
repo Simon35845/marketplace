@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "accounts")
@@ -38,6 +39,12 @@ public class Account {
 
     @OneToOne(mappedBy = "account", cascade = CascadeType.PERSIST)
     private Profile profile;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "account_roles",
+            joinColumns = {@JoinColumn(name = "account_id", referencedColumnName = "id")},
+            inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")})
+    private List<Role> roles;
 
     public Account(String username, String password,
                    LocalDateTime createdAt, LocalDateTime updatedAt) {
