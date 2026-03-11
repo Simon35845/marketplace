@@ -1,6 +1,6 @@
 package com.grapefruitapps.marketplace.profile;
 
-import com.grapefruitapps.marketplace.account.Account;
+import com.grapefruitapps.marketplace.security.Account;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -1,4 +1,4 @@
-package com.grapefruitapps.marketplace.account;
+package com.grapefruitapps.marketplace.security;
 
 import com.grapefruitapps.marketplace.profile.Profile;
 import jakarta.persistence.*;
