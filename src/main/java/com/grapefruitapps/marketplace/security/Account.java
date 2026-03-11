@@ -29,10 +29,6 @@ public class Account {
     private LocalDateTime createdAt;
 
     @Setter
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Setter
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private AccountStatus status;
@@ -46,11 +42,9 @@ public class Account {
             inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")})
     private List<Role> roles;
 
-    public Account(String username, String password,
-                   LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public Account(String username, String password, LocalDateTime createdAt) {
         this.username = username;
         this.password = password;
         this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
     }
 }
