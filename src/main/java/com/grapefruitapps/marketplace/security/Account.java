@@ -2,6 +2,7 @@ package com.grapefruitapps.marketplace.security;
 
 import com.grapefruitapps.marketplace.profile.Profile;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,6 +14,7 @@ import java.util.List;
 @Table(name = "accounts")
 @NoArgsConstructor
 @Getter
+@Setter
 public class Account {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,14 +23,12 @@ public class Account {
     @Column(name = "username", nullable = false, unique = true, updatable = false)
     private String username;
 
-    @Setter
     @Column(name = "password", nullable = false)
     private String password;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Setter
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private AccountStatus status;
@@ -42,9 +42,12 @@ public class Account {
             inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")})
     private List<Role> roles;
 
-    public Account(String username, String password, LocalDateTime createdAt) {
+    public Account(String username, String password, LocalDateTime createdAt,
+                   AccountStatus status, List<Role> roles) {
         this.username = username;
         this.password = password;
         this.createdAt = createdAt;
+        this.status = status;
+        this.roles = roles;
     }
 }

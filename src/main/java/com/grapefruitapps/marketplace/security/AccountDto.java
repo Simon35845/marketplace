@@ -8,9 +8,10 @@ import java.util.List;
 public record AccountDto(
         Long id,
         String username,
-        AccountStatus status,
         LocalDateTime createdAt,
-        ProfileDto profile,
-        List<String> roles
+        AccountStatus status,
+        List<String> roles,
+        ProfileDto profile
+
 ) {
 }
