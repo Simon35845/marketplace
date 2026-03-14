@@ -11,6 +11,10 @@ import java.util.stream.Collectors;
 public class AccountDetails implements UserDetails {
     private final Account account;
 
+    public Long getId(){
+        return account.getId();
+    }
+
     public AccountDetails(Account account) {
         this.account = account;
     }

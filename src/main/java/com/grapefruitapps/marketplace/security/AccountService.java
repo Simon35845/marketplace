@@ -3,9 +3,11 @@ package com.grapefruitapps.marketplace.security;
 import com.grapefruitapps.marketplace.profile.Profile;
 import com.grapefruitapps.marketplace.profile.ProfileDto;
 import com.grapefruitapps.marketplace.profile.ProfileRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +30,7 @@ public class AccountService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    @Transactional
     public AccountDto createAccount(SignUpRequest signUpRequest) {
         log.info("Creating new account");
         Role roleUser = roleRepository.findByName("ROLE_USER");
@@ -39,6 +42,7 @@ public class AccountService {
                 AccountStatus.ACTIVE,
                 List.of(roleUser)
         );
+
         Account savedAccount = accountRepository.save(accountToSave);
         Profile profile = new Profile(
                 signUpRequest.name(),
@@ -46,6 +50,7 @@ public class AccountService {
                 signUpRequest.phone(),
                 savedAccount
         );
+
         Profile savedProfile = profileRepository.save(profile);
         log.info("Account was created, id: {}", savedAccount.getId());
         return new AccountDto(
@@ -61,5 +66,28 @@ public class AccountService {
                         savedProfile.getPhone()
                 )
         );
+    }
+
+    @Transactional
+    public void changePassword(Long id, PasswordDto passwordDto) {
+        log.info("Changing password in account, id: {}", id);
+        Account account = accountRepository.findById(id).orElseThrow(() -> {
+            log.warn("Account with id {} not found in database", id);
+            return new EntityNotFoundException("Not found account by id: " + id);
+        });
+
+        if(!passwordEncoder.matches(passwordDto.currentPassword(), account.getPassword())){
+            log.warn("Current password is incorrect for account id: {}", id);
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+
+        if(passwordEncoder.matches(passwordDto.newPassword(), account.getPassword())){
+            log.warn("New password matches current password for account id: {}", id);
+            throw new IllegalArgumentException("New password must be different from current password");
+        }
+
+        account.setPassword(passwordEncoder.encode(passwordDto.newPassword()));
+        accountRepository.save(account);
+        log.info("Password was changed, account id: {}", id);
     }
 }
