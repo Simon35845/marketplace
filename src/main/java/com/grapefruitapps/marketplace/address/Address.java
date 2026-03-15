@@ -1,13 +1,9 @@
 package com.grapefruitapps.marketplace.address;
 
-import com.grapefruitapps.marketplace.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "addresses",
@@ -36,9 +32,6 @@ public class Address {
 
     @Column(nullable = false, length = 20)
     private String apartment;
-
-    @OneToMany(mappedBy = "address")
-    private List<User> users = new ArrayList<>();
 
     public Address(String country, String city, String street, String house, String apartment) {
         this.country = country;
