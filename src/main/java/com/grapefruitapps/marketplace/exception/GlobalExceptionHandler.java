@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -38,6 +39,39 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
+                .body(errorDto);
+    }
+
+    @ExceptionHandler(exception = {
+            IllegalArgumentException.class,
+            IllegalStateException.class,
+            MethodArgumentNotValidException.class
+    })
+    public ResponseEntity<ErrorResponseDto> handleBadRequest(Exception e){
+        log.error("Handle bad request", e);
+
+        ErrorResponseDto errorDto = new ErrorResponseDto(
+                "Bad request",
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(errorDto);
+    }
+
+    @ExceptionHandler(DuplicateFieldException.class)
+    public ResponseEntity<ErrorResponseDto> handleDuplicateField(DuplicateFieldException e){
+        log.error("Handle duplicate field", e);
+
+        ErrorResponseDto errorDto = new ErrorResponseDto(
+                "Duplicate unique field",
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
                 .body(errorDto);
     }
 }
