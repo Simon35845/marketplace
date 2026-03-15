@@ -1,6 +1,7 @@
 package com.grapefruitapps.marketplace.user.repository;
 
 import com.grapefruitapps.marketplace.user.entity.User;
+import com.grapefruitapps.marketplace.user.entity.UserStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,16 +20,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
 
     @Query("""
-            select u from User u
+            select distinct u from User u
+            left join u.roles r
+                        with (:roleName is null or r.name = :roleName)
             where (:name is null or u.name = :name)
             and (:phone is null or u.phone = :phone)
             and (:email is null or u.email = :email)
+            and (:status is null or u.status = :status)
             order by u.id
             """)
     List<User> searchAllByFilter(
             @Param("name") String name,
             @Param("phone") String phone,
             @Param("email") String email,
+            @Param("status") UserStatus status,
+            @Param("roleName") String roleName,
             Pageable pageable
     );
 }

@@ -1,19 +1,22 @@
-package com.grapefruitapps.marketplace.user;
+package com.grapefruitapps.marketplace.user.controller;
 
-import com.grapefruitapps.marketplace.address.AddressFilter;
+import com.grapefruitapps.marketplace.security.UserDetailsImpl;
+import com.grapefruitapps.marketplace.user.dto.*;
+import com.grapefruitapps.marketplace.user.entity.UserStatus;
+import com.grapefruitapps.marketplace.user.service.UserService;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/users")
+@Slf4j
 public class UserController {
-    private static final Logger log = LoggerFactory.getLogger(UserController.class);
     private final UserService userService;
 
     public UserController(UserService userService) {
@@ -21,14 +24,12 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserDto>> getAllUsers(
+    public ResponseEntity<List<UserResponseDto>> getAllUsers(
             @RequestParam(name = "name", required = false) String name,
             @RequestParam(name = "phone", required = false) String phone,
             @RequestParam(name = "email", required = false) String email,
-            @RequestParam(name = "country", required = false) String country,
-            @RequestParam(name = "city", required = false) String city,
-            @RequestParam(name = "street", required = false) String street,
-            @RequestParam(name = "house", required = false) String house,
+            @RequestParam(name = "status", required = false) UserStatus status,
+            @RequestParam(name = "role", required = false) String role,
             @RequestParam(name = "pageSize", required = false) Integer pageSize,
             @RequestParam(name = "pageNumber", required = false) Integer pageNumber
     ) {
@@ -36,12 +37,8 @@ public class UserController {
                 name,
                 phone,
                 email,
-                new AddressFilter(
-                        country,
-                        city,
-                        street,
-                        house
-                ),
+                status,
+                role,
                 pageSize,
                 pageNumber
         );
@@ -51,7 +48,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDto> getUserById(
+    public ResponseEntity<UserResponseDto> getUserById(
             @PathVariable Long id
     ) {
         log.info("Called getUserById: id={}", id);
@@ -59,21 +56,21 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<UserDto> createUser(
-            @RequestBody @Valid UserDto userDto
+    public ResponseEntity<UserResponseDto> createUser(
+            @RequestBody @Valid UserRegisterDto userRegisterDto
     ) {
         log.info("Called createUser");
-        UserDto createdUser = userService.createUser(userDto);
+        UserResponseDto createdUser = userService.createUser(userRegisterDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserDto> updateUser(
+    public ResponseEntity<UserResponseDto> updateUser(
             @PathVariable Long id,
-            @RequestBody @Valid UserDto userDto
+            @RequestBody @Valid UserRequestDto userRequestDto
     ) {
-        log.info("Called updateUser: id={}, user={}", id, userDto);
-        UserDto updatedUser = userService.updateUser(id, userDto);
+        log.info("Called updateUser: id={}, user={}", id, userRequestDto);
+        UserResponseDto updatedUser = userService.updateUser(id, userRequestDto);
         return ResponseEntity.ok(updatedUser);
     }
 
@@ -83,6 +80,16 @@ public class UserController {
     ) {
         log.info("Called deleteUser: id={}", id);
         userService.deleteUser(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/change-password")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestBody @Valid PasswordDto passwordDto
+    ) {
+        log.info("Called changePassword");
+        userService.changePassword(userDetails.getId(), passwordDto);
         return ResponseEntity.ok().build();
     }
 }
