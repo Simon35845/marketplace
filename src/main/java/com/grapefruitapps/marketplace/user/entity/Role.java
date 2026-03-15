@@ -1,4 +1,4 @@
-package com.grapefruitapps.marketplace.security;
+package com.grapefruitapps.marketplace.user.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -17,5 +17,5 @@ public class Role {
     private String name;
 
     @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
-    private List<Account> accounts;
+    private List<User> users;
 }
