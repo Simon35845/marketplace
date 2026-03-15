@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +25,7 @@ public class UserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<List<UserResponseDto>> getAllUsers(
             @RequestParam(name = "name", required = false) String name,
             @RequestParam(name = "phone", required = false) String phone,
@@ -48,11 +50,22 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<UserResponseDto> getUserById(
             @PathVariable Long id
     ) {
         log.info("Called getUserById: id={}", id);
         return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable Long id
+    ) {
+        log.info("Called deleteUser: id={}", id);
+        userService.deleteUser(id);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/signup")
@@ -64,31 +77,39 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
 
-    @PutMapping("/{id}")
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDto> getCurrentUser(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        log.info("Called getCurrentUser: id={}", userDetails.getId());
+        return ResponseEntity.ok(userService.getUserById(userDetails.getId()));
+    }
+
+    @PutMapping("/me/update")
     public ResponseEntity<UserResponseDto> updateUser(
-            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
             @RequestBody @Valid UserRequestDto userRequestDto
     ) {
-        log.info("Called updateUser: id={}, user={}", id, userRequestDto);
-        UserResponseDto updatedUser = userService.updateUser(id, userRequestDto);
+        log.info("Called updateUser: id={}", userDetails.getId());
+        UserResponseDto updatedUser = userService.updateUser(userDetails.getId(), userRequestDto);
         return ResponseEntity.ok(updatedUser);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(
-            @PathVariable Long id
+    @PatchMapping("/me/for-deletion")
+    public ResponseEntity<Void> markUserForDeletion(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        log.info("Called deleteUser: id={}", id);
-        userService.deleteUser(id);
+        log.info("Called markUserForDeletion: id={}", userDetails.getId());
+        userService.markUserForDeletion(userDetails.getId());
         return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("/change-password")
+    @PatchMapping("/me/change-password")
     public ResponseEntity<Void> changePassword(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @RequestBody @Valid PasswordDto passwordDto
     ) {
-        log.info("Called changePassword");
+        log.info("Called changePassword: id={}", userDetails.getId());
         userService.changePassword(userDetails.getId(), passwordDto);
         return ResponseEntity.ok().build();
     }

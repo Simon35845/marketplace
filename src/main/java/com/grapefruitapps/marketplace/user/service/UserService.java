@@ -131,6 +131,18 @@ public class UserService {
     }
 
     @Transactional
+    public void markUserForDeletion(Long id) {
+        log.info("Marking user for deletion, id: {}", id);
+        User user = userRepository.findById(id).orElseThrow(() -> {
+            log.warn("User with id {} not found in database", id);
+            return new EntityNotFoundException("Not found user by id: " + id);
+        });
+
+        user.setStatus(UserStatus.TO_DELETE);
+        log.info("User marked for deletion, id: {}", id);
+    }
+
+    @Transactional
     public void changePassword(Long id, PasswordDto passwordDto) {
         log.info("Changing password in user, id: {}", id);
         User user = userRepository.findById(id).orElseThrow(() -> {
