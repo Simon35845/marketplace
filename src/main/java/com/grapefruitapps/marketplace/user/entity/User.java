@@ -1,5 +1,6 @@
 package com.grapefruitapps.marketplace.user.entity;
 
+import com.grapefruitapps.marketplace.product.Product;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -45,4 +46,8 @@ public class User {
             joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
             inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")})
     private List<Role> roles;
+
+    @OneToMany(mappedBy = "seller")
+    private List<Product> products;
+
 }

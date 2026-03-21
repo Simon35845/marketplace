@@ -1,5 +1,6 @@
 package com.grapefruitapps.marketplace.product;
 
+import com.grapefruitapps.marketplace.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,6 +29,11 @@ public class Product {
 
     @Column(length = 1000)
     private String description;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id", nullable = false)
+    private User seller;
+
 
     public Product(String name, BigDecimal price, String category, String description) {
         this.name = name;
