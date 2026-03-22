@@ -1,4 +1,4 @@
-package com.grapefruitapps.marketplace.product;
+package com.grapefruitapps.marketplace.product.entity;
 
 import com.grapefruitapps.marketplace.user.entity.User;
 import jakarta.persistence.*;
@@ -33,7 +33,6 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
-
 
     public Product(String name, BigDecimal price, String category, String description) {
         this.name = name;

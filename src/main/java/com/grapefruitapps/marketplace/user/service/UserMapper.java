@@ -12,8 +12,8 @@ public class UserMapper {
                 user.getId(),
                 user.getUsername(),
                 user.getName(),
-                user.getPhone(),
                 user.getEmail(),
+                user.getPhone(),
                 user.getCreatedAt(),
                 user.getStatus(),
                 user.getRoles().stream().map(Role::getName).toList()

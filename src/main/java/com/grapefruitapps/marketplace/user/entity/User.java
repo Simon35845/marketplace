@@ -1,6 +1,6 @@
 package com.grapefruitapps.marketplace.user.entity;
 
-import com.grapefruitapps.marketplace.product.Product;
+import com.grapefruitapps.marketplace.product.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -49,5 +49,4 @@ public class User {
 
     @OneToMany(mappedBy = "seller")
     private List<Product> products;
-
 }

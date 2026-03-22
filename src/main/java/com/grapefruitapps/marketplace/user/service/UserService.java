@@ -1,6 +1,5 @@
 package com.grapefruitapps.marketplace.user.service;
 
-import com.grapefruitapps.marketplace.address.*;
 import com.grapefruitapps.marketplace.exception.DuplicateFieldException;
 import com.grapefruitapps.marketplace.user.dto.*;
 import com.grapefruitapps.marketplace.user.entity.Role;
@@ -10,6 +9,7 @@ import com.grapefruitapps.marketplace.user.repository.RoleRepository;
 import com.grapefruitapps.marketplace.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,14 +36,19 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public UserResponseDto getUserById(Long id) {
-        log.debug("Get user by id: {}", id);
+    public @NonNull User findUserById(Long id) {
+        log.info("Get user by id: {}", id);
         User user = userRepository.findById(id).orElseThrow(() -> {
             log.warn("User with id {} not found in database", id);
             return new EntityNotFoundException("Not found user by id: " + id);
         });
+        log.info("Found user with id: {}", id);
+        return user;
+    }
 
-        log.debug("Found user with id: {}", id);
+    public UserResponseDto getUserById(Long id) {
+        User user = findUserById(id);
+        log.debug("User entity mapped to DTO, user id: {}", id);
         return userMapper.toDto(user);
     }
 
@@ -98,10 +103,7 @@ public class UserService {
     @Transactional
     public UserResponseDto updateUser(Long id, UserRequestDto userRequestDto) {
         log.info("Updating user with id: {}", id);
-        User user = userRepository.findById(id).orElseThrow(() -> {
-            log.warn("User with id {} not found in database", id);
-            return new EntityNotFoundException("Not found user by id: " + id);
-        });
+        User user = findUserById(id);
 
         if (!user.getEmail().equals(userRequestDto.email())) {
             if (userRepository.existsByEmail(userRequestDto.email())) {
@@ -133,10 +135,7 @@ public class UserService {
     @Transactional
     public void markUserForDeletion(Long id) {
         log.info("Marking user for deletion, id: {}", id);
-        User user = userRepository.findById(id).orElseThrow(() -> {
-            log.warn("User with id {} not found in database", id);
-            return new EntityNotFoundException("Not found user by id: " + id);
-        });
+        User user = findUserById(id);
 
         user.setStatus(UserStatus.TO_DELETE);
         log.info("User marked for deletion, id: {}", id);
@@ -145,10 +144,7 @@ public class UserService {
     @Transactional
     public void changePassword(Long id, PasswordDto passwordDto) {
         log.info("Changing password in user, id: {}", id);
-        User user = userRepository.findById(id).orElseThrow(() -> {
-            log.warn("User with id {} not found in database", id);
-            return new EntityNotFoundException("Not found user by id: " + id);
-        });
+        User user = findUserById(id);
 
         if (!passwordEncoder.matches(passwordDto.currentPassword(), user.getPassword())) {
             log.warn("Current password is incorrect for user id: {}", id);
