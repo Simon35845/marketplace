@@ -25,16 +25,6 @@ public class ProductService {
     private final ProductMapper productMapper;
     private final UserService userService;
 
-    private @NonNull Product findProductById(Long id) {
-        log.debug("Get product by id: {}", id);
-        Product product = productRepository.findById(id).orElseThrow(() -> {
-            log.warn("Product with id {} not found in database", id);
-            return new EntityNotFoundException("Not found product by id: " + id);
-        });
-        log.debug("Found product with id: {}", id);
-        return product;
-    }
-
     public ProductResponseDto getProductById(Long id) {
         Product product = findProductById(id);
         return productMapper.toDto(product);
@@ -66,6 +56,7 @@ public class ProductService {
         return productMapper.toDto(savedProduct);
     }
 
+    @Transactional
     public ProductResponseDto updateProduct(
             Long productId,
             ProductRequestDto productRequestDto,
@@ -85,6 +76,7 @@ public class ProductService {
         return productMapper.toDto(savedProduct);
     }
 
+    @Transactional
     public void deleteProduct(Long productId, Long sellerId) {
         log.info("Delete product with id: {}", productId);
         checkProductOwnership(productId, sellerId);
@@ -95,6 +87,16 @@ public class ProductService {
         }
         productRepository.deleteById(productId);
         log.info("Product was deleted, id: {}", productId);
+    }
+
+    private @NonNull Product findProductById(Long id) {
+        log.debug("Get product by id: {}", id);
+        Product product = productRepository.findById(id).orElseThrow(() -> {
+            log.warn("Product with id {} not found in database", id);
+            return new EntityNotFoundException("Not found product by id: " + id);
+        });
+        log.debug("Found product with id: {}", id);
+        return product;
     }
 
     private void checkProductOwnership(Long productId, Long sellerId) {
