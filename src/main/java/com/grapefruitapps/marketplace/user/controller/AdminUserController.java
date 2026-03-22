@@ -3,6 +3,7 @@ package com.grapefruitapps.marketplace.user.controller;
 import com.grapefruitapps.marketplace.user.dto.*;
 import com.grapefruitapps.marketplace.user.entity.UserStatus;
 import com.grapefruitapps.marketplace.user.service.UserService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,15 +15,12 @@ import java.util.List;
 @RequestMapping("/admin/users")
 @PreAuthorize("hasRole('ADMIN')")
 @Slf4j
+@RequiredArgsConstructor
 public class AdminUserController {
     private final UserService userService;
 
-    public AdminUserController(UserService userService) {
-        this.userService = userService;
-    }
-
     @GetMapping
-    public ResponseEntity<List<UserResponseDto>> getAllUsers(
+    public ResponseEntity<List<UserDataDto>> getAllUserData(
             @RequestParam(name = "name", required = false) String name,
             @RequestParam(name = "phone", required = false) String phone,
             @RequestParam(name = "email", required = false) String email,
@@ -31,7 +29,7 @@ public class AdminUserController {
             @RequestParam(name = "pageSize", required = false) Integer pageSize,
             @RequestParam(name = "pageNumber", required = false) Integer pageNumber
     ) {
-        UserFilter userFilter = new UserFilter(
+        UserDataFilter userDataFilter = new UserDataFilter(
                 name,
                 phone,
                 email,
@@ -40,14 +38,14 @@ public class AdminUserController {
                 pageSize,
                 pageNumber
         );
-        log.info("Called getAllUsers");
-        return ResponseEntity.ok(userService.searchAllByFilter(userFilter));
+        log.info("Called getAllUserData");
+        return ResponseEntity.ok(userService.getUserDataByFilter(userDataFilter));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDto> getUserById(@PathVariable Long id) {
-        log.info("Called getUserById: id={}", id);
-        return ResponseEntity.ok(userService.getUserById(id));
+    public ResponseEntity<UserDataDto> getUserDataById(@PathVariable Long id) {
+        log.info("Called getUserDataById: id={}", id);
+        return ResponseEntity.ok(userService.getUserDataById(id));
     }
 
     @DeleteMapping("/{id}")

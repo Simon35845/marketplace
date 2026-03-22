@@ -2,10 +2,11 @@ package com.grapefruitapps.marketplace.user.controller;
 
 import com.grapefruitapps.marketplace.security.UserDetailsImpl;
 import com.grapefruitapps.marketplace.user.dto.PasswordDto;
-import com.grapefruitapps.marketplace.user.dto.UserRequestDto;
-import com.grapefruitapps.marketplace.user.dto.UserResponseDto;
+import com.grapefruitapps.marketplace.user.dto.UserUpdateDto;
+import com.grapefruitapps.marketplace.user.dto.UserDto;
 import com.grapefruitapps.marketplace.user.service.UserService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,15 +17,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/profile")
 @PreAuthorize("isAuthenticated()")
 @Slf4j
+@RequiredArgsConstructor
 public class ProfileController {
     private final UserService userService;
 
-    public ProfileController(UserService userService) {
-        this.userService = userService;
-    }
-
     @GetMapping
-    public ResponseEntity<UserResponseDto> getCurrentUser(
+    public ResponseEntity<UserDto> getCurrentUser(
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         log.info("Called getCurrentUser: id={}", userDetails.getId());
@@ -32,12 +30,12 @@ public class ProfileController {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<UserResponseDto> updateUser(
+    public ResponseEntity<UserDto> updateUser(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestBody @Valid UserRequestDto userRequestDto
+            @RequestBody @Valid UserUpdateDto userUpdateDto
     ) {
         log.info("Called updateUser: id={}", userDetails.getId());
-        UserResponseDto updatedUser = userService.updateUser(userDetails.getId(), userRequestDto);
+        UserDto updatedUser = userService.updateUser(userDetails.getId(), userUpdateDto);
         return ResponseEntity.ok(updatedUser);
     }
 

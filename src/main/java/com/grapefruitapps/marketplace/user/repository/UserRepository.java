@@ -20,6 +20,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
 
     @Query("""
+            select u from User u
+            where (:name is null or u.name = :name)
+            and (:phone is null or u.phone = :phone)
+            and (:email is null or u.email = :email)
+            order by u.id
+            """)
+    List<User> findUsersByFilter(
+            @Param("name") String name,
+            @Param("phone") String phone,
+            @Param("email") String email,
+            Pageable pageable
+    );
+
+    @Query("""
             select distinct u from User u
             left join u.roles r
                         with (:roleName is null or r.name = :roleName)
@@ -29,7 +43,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             and (:status is null or u.status = :status)
             order by u.id
             """)
-    List<User> searchAllByFilter(
+    List<User> findUserDataByFilter(
             @Param("name") String name,
             @Param("phone") String phone,
             @Param("email") String email,

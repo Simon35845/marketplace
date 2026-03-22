@@ -5,7 +5,7 @@ import com.grapefruitapps.marketplace.user.entity.UserStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record UserResponseDto(
+public record UserDataDto(
         Long id,
         String username,
         String name,

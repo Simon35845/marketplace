@@ -1,6 +1,7 @@
 package com.grapefruitapps.marketplace.user.service;
 
-import com.grapefruitapps.marketplace.user.dto.UserResponseDto;
+import com.grapefruitapps.marketplace.user.dto.UserDataDto;
+import com.grapefruitapps.marketplace.user.dto.UserDto;
 import com.grapefruitapps.marketplace.user.entity.Role;
 import com.grapefruitapps.marketplace.user.entity.User;
 import com.grapefruitapps.marketplace.user.entity.UserStatus;
@@ -38,7 +39,35 @@ class UserMapperTest {
                 .roles(List.of(new Role("ROLE_USER")))
                 .build();
 
-        UserResponseDto expectedDto = new UserResponseDto(
+        UserDto expectedDto = new UserDto(
+                id,
+                "Anna_3293",
+                "Anna",
+                "anna@mail.com",
+                null,
+                currentDateTime
+        );
+
+        UserDto result = userMapper.toDto(user);
+        assertEquals(expectedDto, result);
+    }
+
+    @Test
+    void toDataDto() {
+        Long id = 1L;
+        LocalDateTime currentDateTime = LocalDateTime.now();
+
+        User user = User.builder()
+                .id(id)
+                .username("Anna_3293")
+                .name("Anna")
+                .email("anna@mail.com")
+                .createdAt(currentDateTime)
+                .status(UserStatus.ACTIVE)
+                .roles(List.of(new Role("ROLE_USER")))
+                .build();
+
+        UserDataDto expectedDto = new UserDataDto(
                 id,
                 "Anna_3293",
                 "Anna",
@@ -49,7 +78,7 @@ class UserMapperTest {
                 List.of("ROLE_USER")
         );
 
-        UserResponseDto result = userMapper.toDto(user);
+        UserDataDto result = userMapper.toDataDto(user);
         assertEquals(expectedDto, result);
     }
 }
