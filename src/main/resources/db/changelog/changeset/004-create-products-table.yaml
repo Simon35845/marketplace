@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-products-table
+      author: grapefruitapps
+      changes:
+        - createTable:
+            tableName: products
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: decimal(10, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category
+                  type: varchar(100)
+              - column:
+                  name: description
+                  type: varchar(1000)
+              - column:
+                  name: seller_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_products_seller
+            baseTableName: products
+            baseColumnNames: seller_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: RESTRICT
