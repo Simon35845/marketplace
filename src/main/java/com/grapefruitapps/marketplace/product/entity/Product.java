@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "products")
@@ -29,6 +30,16 @@ public class Product {
 
     @Column(length = 1000)
     private String description;
+
+    @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ProductStatus status;
+
+    @Column(name = "creation_date_time", nullable = false, updatable = false)
+    private LocalDateTime creationDateTime;
+
+    @Column(name = "sale_date_time")
+    private LocalDateTime saleDateTime;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)

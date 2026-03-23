@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-update-products-table
+      author: grapefruitapps
+      changes:
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: creation_date_time
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sale_date_time
+                  type: timestamp
