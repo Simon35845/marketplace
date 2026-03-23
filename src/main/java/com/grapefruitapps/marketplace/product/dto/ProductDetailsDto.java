@@ -11,7 +11,6 @@ public record ProductDetailsDto(
         BigDecimal price,
         String category,
         String description,
-        Long sellerId,
         ProductStatus status,
         LocalDateTime creationDateTime,
         LocalDateTime saleDateTime

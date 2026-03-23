@@ -1,18 +1,16 @@
 package com.grapefruitapps.marketplace.product.service;
 
-import com.grapefruitapps.marketplace.product.dto.ProductDetailsDto;
+import com.grapefruitapps.marketplace.product.dto.*;
 import com.grapefruitapps.marketplace.product.entity.Product;
 import com.grapefruitapps.marketplace.product.entity.ProductStatus;
 import com.grapefruitapps.marketplace.product.repository.ProductRepository;
-import com.grapefruitapps.marketplace.product.dto.ProductRequestDto;
-import com.grapefruitapps.marketplace.product.dto.ProductDto;
 import com.grapefruitapps.marketplace.user.entity.User;
 import com.grapefruitapps.marketplace.user.service.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +20,11 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductService {
-    private static final Logger log = LoggerFactory.getLogger(ProductService.class);
+    public static final int DEFAULT_PAGE_SIZE = 10;
+    public static final int DEFAULT_PAGE_NUMBER = 0;
+
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final UserService userService;
@@ -34,23 +35,43 @@ public class ProductService {
         return productMapper.toDto(product);
     }
 
-    public ProductDetailsDto getProduct(Long productId, Long sellerId) {
+    public ProductDetailsDto getProductById(Long productId, Long sellerId) {
         log.debug("Get product by product_id={} and seller_id={}", productId, sellerId);
         Product product = findProductById(productId);
         checkProductOwnership(product, sellerId);
         return productMapper.toDetailsDto(product);
     }
 
-    public List<ProductDto> getAllProducts() {
-        log.debug("Get all products");
-        List<Product> products = productRepository.findAll();
+    public List<ProductDto> getProductsByFilter(ProductFilter filter) {
+        log.debug("Get products by filter");
+        int pageSize = filter.pageSize() != null ? filter.pageSize() : DEFAULT_PAGE_SIZE;
+        int pageNumber = filter.pageNumber() != null ? filter.pageNumber() : DEFAULT_PAGE_NUMBER;
+        Pageable pageable = Pageable.ofSize(pageSize).withPage(pageNumber);
+
+        List<Product> products = productRepository.findProductsByFilter(
+                filter.sellerId(),
+                filter.name(),
+                filter.category(),
+                null,
+                pageable
+        );
         log.debug("Found {} products", products.size());
         return products.stream().map(productMapper::toDto).toList();
     }
 
-    public List<ProductDetailsDto> getProductsBySellerId(Long sellerId) {
-        log.debug("Get products by seller_id={}", sellerId);
-        List<Product> products = productRepository.findBySellerId(sellerId);
+    public List<ProductDetailsDto> getProductsByFilter(ProductDetailsFilter filter, Long sellerId) {
+        log.debug("Get products by filter by seller_id={}", sellerId);
+        int pageSize = filter.pageSize() != null ? filter.pageSize() : DEFAULT_PAGE_SIZE;
+        int pageNumber = filter.pageNumber() != null ? filter.pageNumber() : DEFAULT_PAGE_NUMBER;
+        Pageable pageable = Pageable.ofSize(pageSize).withPage(pageNumber);
+
+        List<Product> products = productRepository.findProductsByFilter(
+                sellerId,
+                filter.name(),
+                filter.category(),
+                filter.status(),
+                pageable
+        );
         log.debug("Found {} products by seller_id={}", products.size(), sellerId);
         return products.stream().map(productMapper::toDetailsDto).toList();
     }

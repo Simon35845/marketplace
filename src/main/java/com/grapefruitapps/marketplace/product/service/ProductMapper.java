@@ -26,7 +26,6 @@ public class ProductMapper {
                 product.getPrice(),
                 product.getCategory(),
                 product.getDescription(),
-                product.getSeller() != null ? product.getSeller().getId() : null,
                 product.getStatus(),
                 product.getCreationDateTime(),
                 product.getSaleDateTime()
