@@ -1,21 +1,22 @@
 package com.grapefruitapps.marketplace.product.dto;
 
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 
 public record ProductRequestDto(
-        @NotNull
-        @Size(min = 3, max = 100, message = "Product name must be between 3 and 100 characters")
+        @NotBlank(message = "Product name is required")
+        @Size(min = 3, max = 200, message = "Product name must be between 3 and 200 characters")
         String name,
 
-        @DecimalMin(value = "0.01", message = "Price must be greater than 0")
+        @NotNull(message = "Price is required")
+        @Positive(message = "Price must be positive")
         BigDecimal price,
+
+        @Size(max = 100, message = "Category must be less than 100 characters")
         String category,
 
-        @Size(max = 1000, message = "Description cannot exceed 1000 characters")
+        @Size(max = 1000, message = "Description must be less than 1000 characters")
         String description
 ) {
 }
