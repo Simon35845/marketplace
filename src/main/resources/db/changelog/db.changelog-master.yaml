@@ -11,3 +11,7 @@ databaseChangeLog:
       file: db/changelog/changeset/005-insert-initial-roles.yaml
   - include:
       file: db/changelog/changeset/006-update-products-table.yaml
+  - include:
+      file: db/changelog/changeset/007-create-orders-table.yaml
+  - include:
+      file: db/changelog/changeset/008-create-order-items-table.yaml

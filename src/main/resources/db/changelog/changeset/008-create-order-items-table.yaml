@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-create-order-items-table
+      author: grapefruitapps
+      changes:
+        - createTable:
+            tableName: order_items
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_price
+                  type: decimal(10, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sub_total_price
+                  type: decimal(10, 2)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_order_items_order
+            baseTableName: order_items
+            baseColumnNames: order_id
+            referencedTableName: orders
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_order_items_product
+            baseTableName: order_items
+            baseColumnNames: product_id
+            referencedTableName: products
+            referencedColumnNames: id
+            onDelete: RESTRICT

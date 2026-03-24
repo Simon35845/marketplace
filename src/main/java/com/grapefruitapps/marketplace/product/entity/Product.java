@@ -1,5 +1,6 @@
 package com.grapefruitapps.marketplace.product.entity;
 
+import com.grapefruitapps.marketplace.order.entity.OrderItem;
 import com.grapefruitapps.marketplace.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -8,6 +9,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -44,6 +46,9 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
+
+    @OneToMany(mappedBy = "product")
+    private List<OrderItem> orderItems;
 
     public Product(String name, BigDecimal price, String category, String description) {
         this.name = name;

@@ -1,0 +1,63 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-create-orders-table
+      author: grapefruitapps
+      changes:
+        - createTable:
+            tableName: orders
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: order_number
+                  type: varchar(8)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: buyer_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_price
+                  type: decimal(10, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shipping_address
+                  type: varchar(300)
+              - column:
+                  name: creation_date_time
+                  type: timestamp
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_orders_buyer
+            baseTableName: orders
+            baseColumnNames: buyer_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: RESTRICT
+        - addForeignKeyConstraint:
+            constraintName: fk_orders_seller
+            baseTableName: orders
+            baseColumnNames: seller_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: RESTRICT
