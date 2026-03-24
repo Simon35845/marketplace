@@ -1,5 +1,6 @@
 package com.grapefruitapps.marketplace.user.entity;
 
+import com.grapefruitapps.marketplace.cart.entity.Cart;
 import com.grapefruitapps.marketplace.order.entity.Order;
 import com.grapefruitapps.marketplace.product.entity.Product;
 import jakarta.persistence.*;
@@ -56,4 +57,7 @@ public class User {
 
     @OneToMany(mappedBy = "seller")
     private List<Order> sales;
+
+    @OneToOne(mappedBy = "buyer")
+    private Cart cart;
 }

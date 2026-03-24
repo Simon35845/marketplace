@@ -1,5 +1,6 @@
 package com.grapefruitapps.marketplace.product.entity;
 
+import com.grapefruitapps.marketplace.cart.entity.CartItem;
 import com.grapefruitapps.marketplace.order.entity.OrderItem;
 import com.grapefruitapps.marketplace.user.entity.User;
 import jakarta.persistence.*;
@@ -49,6 +50,9 @@ public class Product {
 
     @OneToMany(mappedBy = "product")
     private List<OrderItem> orderItems;
+
+    @OneToMany(mappedBy = "product")
+    private List<CartItem> cartItems;
 
     public Product(String name, BigDecimal price, String category, String description) {
         this.name = name;

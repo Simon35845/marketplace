@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-create-carts-table
+      author: grapefruitapps
+      changes:
+        - createTable:
+            tableName: carts
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: buyer_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    unique: true
+        - addForeignKeyConstraint:
+            constraintName: fk_carts_buyer
+            baseTableName: carts
+            baseColumnNames: buyer_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: RESTRICT
