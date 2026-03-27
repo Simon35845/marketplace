@@ -137,7 +137,7 @@ public class ProductService {
         return productMapper.toDetailsDto(savedProduct);
     }
 
-    private @NonNull Product findProductById(Long id) {
+    public @NonNull Product findProductById(Long id) {
         log.debug("Finding product by id: {}", id);
         Product product = productRepository.findById(id).orElseThrow(() -> {
             log.warn("Product with id {} not found in database", id);
