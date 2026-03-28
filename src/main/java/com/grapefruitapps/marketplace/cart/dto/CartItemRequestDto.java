@@ -9,7 +9,8 @@ public record CartItemRequestDto(
         @NotNull(message = "Product id is required")
         Long productId,
 
-        @Positive(message = "Quantity of products must be positive")
+        @NotNull(message = "Quantity is required")
+        @Positive(message = "Quantity must be positive")
         Integer quantity
 ) {
 }

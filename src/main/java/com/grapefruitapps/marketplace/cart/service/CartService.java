@@ -1,24 +1,23 @@
 package com.grapefruitapps.marketplace.cart.service;
 
 import com.grapefruitapps.marketplace.cart.dto.CartDto;
+import com.grapefruitapps.marketplace.cart.dto.CartItemRequestDto;
 import com.grapefruitapps.marketplace.cart.entity.Cart;
 import com.grapefruitapps.marketplace.cart.entity.CartItem;
 import com.grapefruitapps.marketplace.cart.repository.CartItemRepository;
 import com.grapefruitapps.marketplace.cart.repository.CartRepository;
 import com.grapefruitapps.marketplace.product.entity.Product;
-import com.grapefruitapps.marketplace.product.entity.ProductStatus;
 import com.grapefruitapps.marketplace.product.service.ProductService;
 import com.grapefruitapps.marketplace.user.entity.User;
 import com.grapefruitapps.marketplace.user.service.UserService;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.Optional;
 
 @Service
@@ -38,7 +37,7 @@ public class CartService {
     }
 
     @Transactional
-    public CartDto clearCart(Long buyerId){
+    public CartDto clearCart(Long buyerId) {
         log.debug("Clear cart by buyer_id={}", buyerId);
         Cart cart = findCartByBuyerId(buyerId);
         cartItemRepository.deleteAllByCartId(cart.getId());
@@ -48,80 +47,70 @@ public class CartService {
     }
 
     @Transactional
-    public CartDto createCartItem(Long productId, Integer quantity, Long buyerId) {
-        log.info("Creating cart item: product_id={}, quantity={}, buyer_id={}", productId, quantity, buyerId);
-        isQuantityPositive(quantity);
+    public CartDto addItemToCart(CartItemRequestDto itemDto, Long buyerId) {
+        long productId = itemDto.productId();
+        int quantity = itemDto.quantity();
+        log.info("Adding item to cart: product_id={}, quantity={}, buyer_id={}", productId, quantity, buyerId);
         Cart cart = getOrCreateCart(buyerId);
         Product product = productService.findProductById(productId);
 
-        checkProductOwnerShip(buyerId, product);
-        checkProductSold(product);
-
+        if (productService.isProductOwner(product, buyerId)) {
+            throw new IllegalArgumentException("Cannot add your own product to cart");
+        }
+        productService.checkProductNotSold(product);
         Optional<CartItem> existingItem = cartItemRepository.findByCartAndProduct(cart, product);
 
         if (existingItem.isPresent()) {
-            CartItem cartItem = existingItem.get();
-            cartItem.setQuantity(cartItem.getQuantity() + quantity);
-            cartItemRepository.save(cartItem);
+            CartItem item = existingItem.get();
+            item.setQuantity(item.getQuantity() + quantity);
+            cartItemRepository.save(item);
             log.info("Increased quantity of existing item: id={}, new quantity={}",
-                    cartItem.getId(), cartItem.getQuantity());
+                    item.getId(), item.getQuantity());
         } else {
-            CartItem cartItem = new CartItem(cart, product, quantity);
-            cartItemRepository.save(cartItem);
-            log.info("Created new cart item: id={}", cartItem.getId());
+            CartItem item = new CartItem(cart, product, quantity);
+            cartItemRepository.save(item);
+            log.info("Item added to cart: id={}", item.getId());
         }
         return getCart(buyerId);
     }
 
     @Transactional
-    public CartDto updateCartItemQuantity(Long cartItemId, Integer quantity, Long buyerId) {
-        log.info("Updating cart item quantity: cartItemId={}, quantity={}, buyer_id={}", cartItemId, quantity, buyerId);
-        isQuantityPositive(quantity);
-        CartItem cartItem = findCartItemById(cartItemId);
-        checkCartItemOwnerShip(cartItem, buyerId);
+    public CartDto changeItemQuantity(Long itemId, Integer quantity, Long buyerId) {
+        log.info("Updating cart item quantity: item_id={}, quantity={}, buyer_id={}", itemId, quantity, buyerId);
+        CartItem item = findCartItemById(itemId);
+        checkCartItemOwnerShip(item, buyerId);
 
-        cartItem.setQuantity(quantity);
-        cartItemRepository.save(cartItem);
+        item.setQuantity(quantity);
+        cartItemRepository.save(item);
         log.info("Cart item quantity was updated");
         return getCart(buyerId);
     }
 
     @Transactional
-    public CartDto deleteCartItem(Long cartItemId, Long buyerId) {
-        log.info("Deleting cart item: cartItemId={}, buyer_id={}", cartItemId, buyerId);
+    public CartDto deleteItem(Long itemId, Long buyerId) {
+        log.info("Deleting cart item: cartItemId={}, buyer_id={}", itemId, buyerId);
+        CartItem item = findCartItemById(itemId);
+        checkCartItemOwnerShip(item, buyerId);
 
-        CartItem cartItem = findCartItemById(cartItemId);
-
-        checkCartItemOwnerShip(cartItem, buyerId);
-
-        cartItemRepository.deleteById(cartItemId);
+        cartItemRepository.deleteById(itemId);
         log.info("Cart item was deleted");
         return getCart(buyerId);
     }
 
-    private void checkCartItemOwnerShip(CartItem cartItem, Long buyerId) {
-        log.debug("Checking cart item ownership, cartItem_id={}, buyerId_id={}", cartItem.getId(), buyerId);
-        if (!cartItem.getCart().getBuyer().getId().equals(buyerId)) {
-            throw new AccessDeniedException("This cart item does not belong to the user");
-        }
-    }
-
     private Cart findCartByBuyerId(Long buyerId) {
         log.debug("Finding cart by buyer_id={}", buyerId);
-        return cartRepository.findByBuyerId(buyerId).orElseThrow(() ->
-                new EntityNotFoundException("Not found cart for current user"));
-    }
-
-    private void isQuantityPositive(Integer quantity) {
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be positive");
-        }
+        return cartRepository.findByBuyerId(buyerId).orElseThrow(() -> {
+            log.warn("Cart with buyer_id {} not found in database", buyerId);
+            return new EntityNotFoundException("Not found cart for current user");
+        });
     }
 
     private CartItem findCartItemById(Long id) {
         log.debug("Finding cart item with id={}", id);
-        return cartItemRepository.findById(id).orElseThrow(() ->
-                new EntityNotFoundException("Not found cart item by id: " + id));
+        return cartItemRepository.findById(id).orElseThrow(() -> {
+            log.warn("Cart item with id {} not found in database", id);
+            return new EntityNotFoundException("Not found cart item by id: " + id);
+        });
     }
 
     private @NonNull Cart getOrCreateCart(Long buyerId) {
@@ -129,20 +118,16 @@ public class CartService {
         User buyer = userService.findUserById(buyerId);
         return cartRepository.findByBuyerId(buyerId).orElseGet(() -> {
             log.info("Creating new cart for buyer_id={}", buyerId);
-            Cart newCart = new Cart(buyer);
-            return cartRepository.save(newCart);
+            return cartRepository.save(new Cart(buyer));
         });
     }
 
-    private void checkProductOwnerShip(Long buyerId, Product product) {
-        if (product.getSeller().getId().equals(buyerId)) {
-            throw new IllegalArgumentException("Cannot add your own product to cart");
-        }
-    }
-
-    private void checkProductSold(Product product) {
-        if (product.getStatus() == ProductStatus.SOLD) {
-            throw new IllegalStateException("Cannot add sold product to cart");
+    private void checkCartItemOwnerShip(CartItem item, Long buyerId) {
+        log.debug("Checking cart item ownership, item_id={}, buyerId_id={}", item.getId(), buyerId);
+        if (!item.getCart().getBuyer().getId().equals(buyerId)) {
+            log.warn("Buyer with id={} attempted to access cart item with id={} owned by another buyer with id={}",
+                    buyerId, item.getId(), item.getCart().getBuyer().getId());
+            throw new AccessDeniedException("This cart item does not belong to the user");
         }
     }
 }

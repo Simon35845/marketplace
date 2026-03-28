@@ -149,18 +149,22 @@ public class ProductService {
 
     private void checkProductOwnership(Product product, Long sellerId) {
         log.debug("Checking product ownership, product_id={}, seller_id={}", product.getId(), sellerId);
-        if (!product.getSeller().getId().equals(sellerId)) {
+        if (!isProductOwner(product, sellerId)) {
             log.warn("Seller with id={} attempted to access product with id={} owned by another seller with id={}",
                     sellerId, product.getId(), product.getSeller().getId());
             throw new AccessDeniedException("You don't have permission to access this product");
         }
     }
 
-    private void checkProductNotSold(Product product) {
+    public void checkProductNotSold(Product product) {
         log.debug("Checking that product is not sold, product_id={}", product.getId());
         if (product.getStatus() == ProductStatus.SOLD) {
             log.warn("Attempt to modify sold product with id={}", product.getId());
             throw new IllegalStateException("Cannot modify sold product");
         }
+    }
+
+    public boolean isProductOwner(Product product, Long sellerId){
+        return product.getSeller().getId().equals(sellerId);
     }
 }
