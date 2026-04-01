@@ -32,7 +32,7 @@ public class CartService {
 
     public CartDto getCart(Long buyerId) {
         log.debug("Get cart by buyer_id={}", buyerId);
-        Cart cart = findCartByBuyerId(buyerId);
+        Cart cart = findByBuyerIdWithAllDetails(buyerId);
         return cartMapper.toCartDto(cart);
     }
 
@@ -77,7 +77,7 @@ public class CartService {
     @Transactional
     public CartDto changeItemQuantity(Long itemId, Integer quantity, Long buyerId) {
         log.info("Updating cart item quantity: item_id={}, quantity={}, buyer_id={}", itemId, quantity, buyerId);
-        CartItem item = findCartItemById(itemId);
+        CartItem item = findCartItemByIdWithCartAndBuyer(itemId);
         checkCartItemOwnerShip(item, buyerId);
 
         item.setQuantity(quantity);
@@ -89,7 +89,7 @@ public class CartService {
     @Transactional
     public CartDto deleteItem(Long itemId, Long buyerId) {
         log.info("Deleting cart item: cartItemId={}, buyer_id={}", itemId, buyerId);
-        CartItem item = findCartItemById(itemId);
+        CartItem item = findCartItemByIdWithCartAndBuyer(itemId);
         checkCartItemOwnerShip(item, buyerId);
 
         cartItemRepository.deleteById(itemId);
@@ -97,7 +97,9 @@ public class CartService {
         return getCart(buyerId);
     }
 
-    private Cart findCartByBuyerId(Long buyerId) {
+
+
+    public @NonNull Cart  findCartByBuyerId(Long buyerId) {
         log.debug("Finding cart by buyer_id={}", buyerId);
         return cartRepository.findByBuyerId(buyerId).orElseThrow(() -> {
             log.warn("Cart with buyer_id {} not found in database", buyerId);
@@ -105,9 +107,17 @@ public class CartService {
         });
     }
 
-    private CartItem findCartItemById(Long id) {
+    public @NonNull Cart findByBuyerIdWithAllDetails(Long buyerId) {
+        log.debug("Finding cart by buyer_id={} with items and products", buyerId);
+        return cartRepository.findByBuyerIdWithAllDetails(buyerId).orElseThrow(() -> {
+            log.warn("Cart with buyer_id {} not found in database", buyerId);
+            return new EntityNotFoundException("Not found cart for current user");
+        });
+    }
+
+    private @NonNull CartItem findCartItemByIdWithCartAndBuyer(Long id) {
         log.debug("Finding cart item with id={}", id);
-        return cartItemRepository.findById(id).orElseThrow(() -> {
+        return cartItemRepository.findByIdWithCartAndBuyer(id).orElseThrow(() -> {
             log.warn("Cart item with id {} not found in database", id);
             return new EntityNotFoundException("Not found cart item by id: " + id);
         });
@@ -128,6 +138,12 @@ public class CartService {
             log.warn("Buyer with id={} attempted to access cart item with id={} owned by another buyer with id={}",
                     buyerId, item.getId(), item.getCart().getBuyer().getId());
             throw new AccessDeniedException("This cart item does not belong to the user");
+        }
+    }
+
+    public void checkCartIsEmpty(Long buyerId, Cart cart) {
+        if (cart.getCartItems().isEmpty()) {
+            throw new IllegalStateException("Cart is empty");
         }
     }
 }

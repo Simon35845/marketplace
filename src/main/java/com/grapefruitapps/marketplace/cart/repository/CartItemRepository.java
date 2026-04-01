@@ -13,9 +13,16 @@ import java.util.Optional;
 
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
+    @Query("""
+            SELECT ci FROM CartItem ci
+            LEFT JOIN FETCH ci.cart.buyer
+            WHERE ci.id = :id
+            """)
+    Optional<CartItem> findByIdWithCartAndBuyer(@Param("id") Long id);
+
     Optional<CartItem> findByCartAndProduct(Cart cart, Product product);
 
     @Modifying
-    @Query("delete from CartItem ci where ci.cart.id = :cartId")
+    @Query("DELETE FROM CartItem ci WHERE ci.cart.id = :cartId")
     void deleteAllByCartId(@Param("cartId") Long cartId);
 }

@@ -123,23 +123,19 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductDetailsDto markProductAsSold(Long productId, Long sellerId) {
-        log.info("Mark product as sold, product_id={} and seller_id={}", productId, sellerId);
-        Product product = findProductById(productId);
+    public void markProductAsSold(Product product, Long sellerId) {
+        log.info("Mark product as sold, product_id={} and seller_id={}", product.getId(), sellerId);
         checkProductOwnership(product, sellerId);
         checkProductNotSold(product);
 
         product.setStatus(ProductStatus.SOLD);
         product.setSaleDateTime(LocalDateTime.now());
-
-        Product savedProduct = productRepository.save(product);
-        log.info("Product marked as sold, product_id={}, seller_id={}", productId, sellerId);
-        return productMapper.toDetailsDto(savedProduct);
+        productRepository.save(product);
     }
 
     public @NonNull Product findProductById(Long id) {
         log.debug("Finding product by id: {}", id);
-        Product product = productRepository.findById(id).orElseThrow(() -> {
+        Product product = productRepository.findByIdWithSeller(id).orElseThrow(() -> {
             log.warn("Product with id {} not found in database", id);
             return new EntityNotFoundException("Not found product by id: " + id);
         });

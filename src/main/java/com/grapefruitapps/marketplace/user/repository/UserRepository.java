@@ -20,11 +20,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
 
     @Query("""
-            select u from User u
-            where (:name is null or u.name = :name)
-            and (:phone is null or u.phone = :phone)
-            and (:email is null or u.email = :email)
-            order by u.id
+            SELECT u FROM User u
+            WHERE (:name IS NULL OR u.name = :name)
+            AND (:phone IS NULL OR u.phone = :phone)
+            AND (:email IS NULL OR u.email = :email)
+            ORDER BY u.id
             """)
     List<User> findUsersByFilter(
             @Param("name") String name,
@@ -34,14 +34,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     );
 
     @Query("""
-            select distinct u from User u
-            left join u.roles r
-                        with (:roleName is null or r.name = :roleName)
-            where (:name is null or u.name = :name)
-            and (:phone is null or u.phone = :phone)
-            and (:email is null or u.email = :email)
-            and (:status is null or u.status = :status)
-            order by u.id
+            SELECT DISTINCT u FROM User u
+            LEFT JOIN u.roles r
+            WITH (:roleName IS NULL OR r.name = :roleName)
+            WHERE (:name IS NULL OR u.name = :name)
+            AND (:phone IS NULL OR u.phone = :phone)
+            AND (:email IS NULL OR u.email = :email)
+            AND (:status IS NULL OR u.status = :status)
+            ORDER BY u.id
             """)
     List<User> findUserDataByFilter(
             @Param("name") String name,
