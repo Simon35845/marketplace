@@ -122,7 +122,6 @@ public class ProductService {
         log.info("Product was deleted, product_id={}, seller_id={}", productId, sellerId);
     }
 
-    @Transactional
     public void markProductAsSold(Product product, Long sellerId) {
         log.info("Mark product as sold, product_id={} and seller_id={}", product.getId(), sellerId);
         checkProductOwnership(product, sellerId);

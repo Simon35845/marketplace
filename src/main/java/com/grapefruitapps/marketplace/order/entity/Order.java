@@ -2,9 +2,7 @@ package com.grapefruitapps.marketplace.order.entity;
 
 import com.grapefruitapps.marketplace.user.entity.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -13,6 +11,8 @@ import java.util.List;
 @Entity
 @Table(name = "orders")
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Getter
 @Setter
 public class Order {
