@@ -2,7 +2,6 @@ package com.grapefruitapps.marketplace.product.service;
 
 import com.grapefruitapps.marketplace.product.dto.*;
 import com.grapefruitapps.marketplace.product.entity.Product;
-import com.grapefruitapps.marketplace.product.entity.ProductStatus;
 import com.grapefruitapps.marketplace.product.repository.ProductRepository;
 import com.grapefruitapps.marketplace.user.entity.User;
 import com.grapefruitapps.marketplace.user.service.UserService;
@@ -32,6 +31,7 @@ public class ProductService {
     public ProductDto getProductById(Long id) {
         log.debug("Get product by id={}", id);
         Product product = findProductById(id);
+        checkProductAvailability(product);
         return productMapper.toDto(product);
     }
 
@@ -52,7 +52,8 @@ public class ProductService {
                 filter.sellerId(),
                 filter.name(),
                 filter.category(),
-                null,
+                true,
+                true,
                 pageable
         );
         log.debug("Found {} products", products.size());
@@ -69,7 +70,8 @@ public class ProductService {
                 sellerId,
                 filter.name(),
                 filter.category(),
-                filter.status(),
+                filter.isVisible(),
+                filter.isPublished(),
                 pageable
         );
         log.debug("Found {} products by seller_id={}", products.size(), sellerId);
@@ -78,11 +80,12 @@ public class ProductService {
 
     @Transactional
     public ProductDetailsDto createProduct(ProductRequestDto productRequestDto, Long sellerId) {
-        log.info("Create new product, seller_id={}", sellerId);
+        log.info("Creating new product: seller_id={}", sellerId);
         User seller = userService.findUserById(sellerId);
         Product product = productMapper.toEntity(productRequestDto);
         product.setSeller(seller);
-        product.setStatus(ProductStatus.CREATED);
+        product.setVisible(false);
+        product.setPublished(false);
         product.setCreationDateTime(LocalDateTime.now());
 
         Product savedProduct = productRepository.save(product);
@@ -96,10 +99,13 @@ public class ProductService {
             ProductRequestDto productRequestDto,
             Long sellerId
     ) {
-        log.info("Update product with product_id={} and seller_id={}", productId, sellerId);
+        log.info("Updating product: product_id={}, seller_id={}", productId, sellerId);
         Product product = findProductById(productId);
         checkProductOwnership(product, sellerId);
-        checkProductNotSold(product);
+
+        if (product.isPublished()) {
+            throw new IllegalStateException("Cannot modify published product");
+        }
 
         product.setName(productRequestDto.name());
         product.setPrice(productRequestDto.price());
@@ -107,29 +113,54 @@ public class ProductService {
         product.setDescription(productRequestDto.description());
 
         Product savedProduct = productRepository.save(product);
-        log.info("Product was updated, product_id={}, seller_id={}", savedProduct.getId(), sellerId);
+        log.info("Product was updated: product_id={}, seller_id={}", productId, sellerId);
         return productMapper.toDetailsDto(savedProduct);
     }
 
     @Transactional
-    public void deleteProduct(Long productId, Long sellerId) {
-        log.info("Delete product with product_id={} and seller_id={}", productId, sellerId);
+    public void publishProduct(Long productId, Long sellerId) {
+        log.info("Publishing product: product_id={}, seller_id={}", productId, sellerId);
         Product product = findProductById(productId);
         checkProductOwnership(product, sellerId);
-        checkProductNotSold(product);
 
-        productRepository.deleteById(productId);
-        log.info("Product was deleted, product_id={}, seller_id={}", productId, sellerId);
+        if (product.isPublished()) {
+            throw new IllegalStateException("This product has already been published");
+        }
+
+        product.setPublished(true);
+        product.setVisible(true);
+        productRepository.save(product);
+        log.info("Product was published: product_id={}, seller_id={}", productId, sellerId);
     }
 
-    public void markProductAsSold(Product product, Long sellerId) {
-        log.info("Mark product as sold, product_id={} and seller_id={}", product.getId(), sellerId);
+    @Transactional
+    public void changeProductVisibility(Long productId, boolean isVisible, Long sellerId) {
+        log.info("Changing product visibility, product_id={}, isVisible={}, seller_id={}",
+                productId, isVisible, sellerId);
+        Product product = findProductById(productId);
         checkProductOwnership(product, sellerId);
-        checkProductNotSold(product);
 
-        product.setStatus(ProductStatus.SOLD);
-        product.setSaleDateTime(LocalDateTime.now());
+        if (!product.isPublished()) {
+            throw new IllegalStateException("Unpublished product cannot be visible");
+        }
+
+        product.setVisible(isVisible);
         productRepository.save(product);
+        log.info("Product visibility was changed: product_id={}, seller_id={}", productId, sellerId);
+    }
+
+    @Transactional
+    public void deleteProduct(Long productId, Long sellerId) {
+        log.info("Deleting product: product_id={}, seller_id={}", productId, sellerId);
+        Product product = findProductById(productId);
+        checkProductOwnership(product, sellerId);
+
+        if (!product.getOrderItems().isEmpty()) {
+            throw new IllegalStateException("Cannot delete product which related to orders");
+        }
+
+        productRepository.deleteById(productId);
+        log.info("Product was deleted: product_id={}, seller_id={}", productId, sellerId);
     }
 
     public @NonNull Product findProductById(Long id) {
@@ -151,15 +182,13 @@ public class ProductService {
         }
     }
 
-    public void checkProductNotSold(Product product) {
-        log.debug("Checking that product is not sold, product_id={}", product.getId());
-        if (product.getStatus() == ProductStatus.SOLD) {
-            log.warn("Attempt to modify sold product with id={}", product.getId());
-            throw new IllegalStateException("Cannot modify sold product");
+    public void checkProductAvailability(Product product) {
+        if (!product.isPublished() || !product.isVisible()) {
+            throw new IllegalStateException("Product is not available");
         }
     }
 
-    public boolean isProductOwner(Product product, Long sellerId){
+    public boolean isProductOwner(Product product, Long sellerId) {
         return product.getSeller().getId().equals(sellerId);
     }
 }

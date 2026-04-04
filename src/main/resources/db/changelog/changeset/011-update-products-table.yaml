@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-update-products-table
+      author: grapefruitapps
+      changes:
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: is_visible
+                  type: boolean
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_published
+                  type: boolean
+                  constraints:
+                    nullable: false
+        - dropColumn:
+            tableName: products
+            columnName: status
+        - dropColumn:
+            tableName: products
+            columnName: sale_date_time

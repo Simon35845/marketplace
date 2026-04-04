@@ -3,7 +3,6 @@ package com.grapefruitapps.marketplace.product.controller;
 import com.grapefruitapps.marketplace.product.dto.ProductDetailsDto;
 import com.grapefruitapps.marketplace.product.dto.ProductDetailsFilter;
 import com.grapefruitapps.marketplace.product.dto.ProductRequestDto;
-import com.grapefruitapps.marketplace.product.entity.ProductStatus;
 import com.grapefruitapps.marketplace.product.service.ProductService;
 import com.grapefruitapps.marketplace.security.UserDetailsImpl;
 import jakarta.validation.Valid;
@@ -29,7 +28,8 @@ public class ProfileProductController {
     public ResponseEntity<List<ProductDetailsDto>> getAllProducts(
             @RequestParam(name = "name", required = false) String name,
             @RequestParam(name = "category", required = false) String category,
-            @RequestParam(name = "status", required = false) ProductStatus status,
+            @RequestParam(name = "isVisible", required = false) Boolean isVisible,
+            @RequestParam(name = "isPublished", required = false) Boolean isPublished,
             @RequestParam(name = "pageSize", required = false) Integer pageSize,
             @RequestParam(name = "pageNumber", required = false) Integer pageNumber,
             @AuthenticationPrincipal UserDetailsImpl userDetails
@@ -37,7 +37,8 @@ public class ProfileProductController {
         ProductDetailsFilter filter = new ProductDetailsFilter(
                 name,
                 category,
-                status,
+                isVisible,
+                isPublished,
                 pageSize,
                 pageNumber
         );
@@ -70,10 +71,31 @@ public class ProfileProductController {
             @RequestBody @Valid ProductRequestDto productRequestDto,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        log.info("Called updateProduct: product_id={}, product={}, seller_id={}",
-                id, productRequestDto, userDetails.getId());
+        log.info("Called updateProduct: product_id={}, seller_id={}", id, userDetails.getId());
         ProductDetailsDto updatedProduct = productService.updateProduct(id, productRequestDto, userDetails.getId());
         return ResponseEntity.ok(updatedProduct);
+    }
+
+    @PatchMapping("/{id}/publish")
+    public ResponseEntity<Void> publishProduct(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        log.info("Called publishProduct: product_id={}, seller_id={}", id, userDetails.getId());
+        productService.publishProduct(id, userDetails.getId());
+        return ResponseEntity.accepted().build();
+    }
+
+    @PatchMapping("/{id}/visibility")
+    public ResponseEntity<Void> changeProductVisibility(
+            @PathVariable Long id,
+            @RequestParam boolean isVisible,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        log.info("Called changeProductVisibility: product_id={}, isVisible={}, seller_id={}",
+                id, isVisible, userDetails.getId());
+        productService.changeProductVisibility(id, isVisible, userDetails.getId());
+        return ResponseEntity.accepted().build();
     }
 
     @DeleteMapping("/{id}")
@@ -83,6 +105,6 @@ public class ProfileProductController {
     ) {
         log.info("Called deleteProduct: product_id={}, seller_id={}", id, userDetails.getId());
         productService.deleteProduct(id, userDetails.getId());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }

@@ -57,7 +57,7 @@ public class CartService {
         if (productService.isProductOwner(product, buyerId)) {
             throw new IllegalArgumentException("Cannot add your own product to cart");
         }
-        productService.checkProductNotSold(product);
+        productService.checkProductAvailability(product);
         Optional<CartItem> existingItem = cartItemRepository.findByCartAndProduct(cart, product);
 
         if (existingItem.isPresent()) {
@@ -96,8 +96,6 @@ public class CartService {
         log.info("Cart item was deleted");
         return getCart(buyerId);
     }
-
-
 
     public @NonNull Cart  findCartByBuyerId(Long buyerId) {
         log.debug("Finding cart by buyer_id={}", buyerId);
@@ -141,7 +139,7 @@ public class CartService {
         }
     }
 
-    public void checkCartIsEmpty(Long buyerId, Cart cart) {
+    public void checkCartIsEmpty(Cart cart) {
         if (cart.getCartItems().isEmpty()) {
             throw new IllegalStateException("Cart is empty");
         }

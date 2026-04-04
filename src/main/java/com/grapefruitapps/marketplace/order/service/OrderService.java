@@ -62,7 +62,7 @@ public class OrderService {
     public List<OrderDto> createOrdersFromCart(OrderRequestDto orderRequestDto, Long buyerId) {
         log.info("Creating order from cart: buyer_id={}", buyerId);
         Cart cart = cartService.findByBuyerIdWithAllDetails(buyerId);
-        cartService.checkCartIsEmpty(buyerId, cart);
+        cartService.checkCartIsEmpty(cart);
         String shippingAddress = orderRequestDto.shippingAddress();
 
         List<Order> orders = new ArrayList<>();
@@ -115,7 +115,7 @@ public class OrderService {
 
     private OrderItem createOrderItem(CartItem cartItem, Order order) {
         Product product = cartItem.getProduct();
-        productService.markProductAsSold(product, order.getSeller().getId());
+        productService.checkProductAvailability(product);
         BigDecimal subTotal = product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
 
         return OrderItem.builder()
