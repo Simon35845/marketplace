@@ -1,5 +1,6 @@
 package com.grapefruitapps.marketplace.order.dto;
 
+import com.grapefruitapps.marketplace.order.entity.DeliveryType;
 import com.grapefruitapps.marketplace.order.entity.OrderStatus;
 
 import java.math.BigDecimal;
@@ -14,6 +15,7 @@ public record OrderDto(
         List<OrderItemDto> items,
         Integer numberOfItems,
         BigDecimal totalPrice,
+        DeliveryType deliveryType,
         OrderStatus status,
         String shippingAddress,
         LocalDateTime creationDateTime

@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-update-orders-table
+      author: grapefruitapps
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: delivery_type
+                  type: varchar(30)
+                  constraints:
+                    nullable: false

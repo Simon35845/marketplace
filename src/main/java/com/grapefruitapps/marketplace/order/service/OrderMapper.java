@@ -39,6 +39,7 @@ public class OrderMapper {
                 itemDtos,
                 numberOfItems,
                 order.getTotalPrice(),
+                order.getDeliveryType(),
                 order.getStatus(),
                 order.getShippingAddress(),
                 order.getCreationDateTime()

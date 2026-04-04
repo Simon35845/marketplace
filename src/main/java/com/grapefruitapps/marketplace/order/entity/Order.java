@@ -37,6 +37,10 @@ public class Order {
     @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
 
+    @Column(name = "delivery_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private DeliveryType deliveryType;
+
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private OrderStatus status;

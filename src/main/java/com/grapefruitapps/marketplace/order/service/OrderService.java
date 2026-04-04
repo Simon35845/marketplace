@@ -39,7 +39,7 @@ public class OrderService {
 
     public OrderDto getOrderById(Long orderId, Long userId) {
         log.debug("Get order by id={}", orderId);
-        Order order = findByIdWithAllDetails(orderId);
+        Order order = findOrderByIdWithAllDetails(orderId);
         checkOrderAccess(order, userId);
         return orderMapper.toOrderDto(order);
     }
@@ -63,13 +63,11 @@ public class OrderService {
         log.info("Creating order from cart: buyer_id={}", buyerId);
         Cart cart = cartService.findByBuyerIdWithAllDetails(buyerId);
         cartService.checkCartIsEmpty(cart);
-        String shippingAddress = orderRequestDto.shippingAddress();
-
         List<Order> orders = new ArrayList<>();
 
         if (cart.getCartItems().size() == 1) {
             Long sellerId = cart.getCartItems().getFirst().getProduct().getSeller().getId();
-            Order createdOrder = createOneOrder(cart, sellerId, shippingAddress);
+            Order createdOrder = createOneOrder(cart, sellerId, orderRequestDto);
             orders.add(createdOrder);
         } else {
             Set<Long> sellerIds = new HashSet<>();
@@ -78,7 +76,7 @@ public class OrderService {
             }
 
             for (Long sellerId : sellerIds) {
-                Order createdOrder = createOneOrder(cart, sellerId, shippingAddress);
+                Order createdOrder = createOneOrder(cart, sellerId, orderRequestDto);
                 orders.add(createdOrder);
             }
         }
@@ -88,14 +86,29 @@ public class OrderService {
         return orders.stream().map(orderMapper::toOrderDto).toList();
     }
 
-    private Order createOneOrder(Cart cart, Long sellerId, String shippingAddress) {
+    private OrderItem createOrderItem(CartItem cartItem, Order order) {
+        Product product = cartItem.getProduct();
+        productService.checkProductAvailability(product);
+        BigDecimal subTotal = product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+
+        return OrderItem.builder()
+                .order(order)
+                .product(product)
+                .quantity(cartItem.getQuantity())
+                .unitPrice(product.getPrice())
+                .subTotalPrice(subTotal)
+                .build();
+    }
+
+    private Order createOneOrder(Cart cart, Long sellerId, OrderRequestDto orderRequestDto) {
         log.info("Creating order: buyer_id={}, seller_id={}", cart.getBuyer().getId(), sellerId);
         Order orderToSave = Order.builder()
                 .orderNumber(generator.generate())
                 .buyer(cart.getBuyer())
                 .seller(userService.findUserById(sellerId))
+                .deliveryType(orderRequestDto.deliveryType())
                 .status(OrderStatus.PENDING)
-                .shippingAddress(shippingAddress)
+                .shippingAddress(orderRequestDto.shippingAddress())
                 .creationDateTime(LocalDateTime.now())
                 .build();
 
@@ -113,26 +126,129 @@ public class OrderService {
         return orderRepository.save(orderToSave);
     }
 
-    private OrderItem createOrderItem(CartItem cartItem, Order order) {
-        Product product = cartItem.getProduct();
-        productService.checkProductAvailability(product);
-        BigDecimal subTotal = product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+    @Transactional
+    public OrderDto changeItemQuantity(Long itemId, Integer quantity, Long buyerId) {
+        log.info("Updating order item quantity: item_id={}, quantity={}, buyer_id={}", itemId, quantity, buyerId);
+        OrderItem item = findOrderItemByIdWithDetails(itemId);
+        checkOrderItemOwnerShip(item, buyerId);
 
-        return OrderItem.builder()
-                .order(order)
-                .product(product)
-                .quantity(cartItem.getQuantity())
-                .unitPrice(product.getPrice())
-                .subTotalPrice(subTotal)
-                .build();
+        item.setQuantity(quantity);
+        orderItemRepository.save(item);
+        log.info("Order item quantity was updated");
+        return getOrderById(item.getOrder().getId(), buyerId);
     }
 
-    private @NonNull Order findByIdWithAllDetails(Long id) {
+    @Transactional
+    public OrderDto deleteItem(Long itemId, Long buyerId) {
+        log.info("Deleting order item: itemId={}, buyer_id={}", itemId, buyerId);
+        OrderItem item = findOrderItemByIdWithDetails(itemId);
+        checkOrderItemOwnerShip(item, buyerId);
+
+        orderItemRepository.deleteById(itemId);
+        log.info("Order item was deleted");
+        return getOrderById(item.getOrder().getId(), buyerId);
+    }
+
+        @Transactional
+    public OrderDto updateOrder(Long orderId, OrderRequestDto orderRequestDto, Long buyerId) {
+        log.info("Updating order: order_id={}, buyer_id={}", orderId, buyerId);
+        Order order = findOrderByIdWithAllDetails(orderId);
+        checkOrderAccess(order, buyerId);
+
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new IllegalStateException("Cannot modify order with status: " + order.getStatus());
+        }
+
+        order.setDeliveryType(orderRequestDto.deliveryType());
+        order.setShippingAddress(orderRequestDto.shippingAddress());
+
+        Order savedOrder = orderRepository.save(order);
+        log.info("Order was updated: order_id={}, buyer_id={}", orderId, buyerId);
+        return orderMapper.toOrderDto(savedOrder);
+    }
+
+    @Transactional
+    public void deleteOrder(Long orderId, Long buyerId) {
+        log.info("Deleting order: order_id={}, buyer_id={}", orderId, buyerId);
+        Order order = findOrderByIdWithAllDetails(orderId);
+        checkOrderAccess(order, buyerId);
+
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new IllegalStateException("Cannot delete order with status: " + order.getStatus());
+        }
+
+        orderRepository.deleteById(orderId);
+        log.info("Order was deleted: order_id={}, buyer_id={}", orderId, buyerId);
+    }
+
+    @Transactional
+    public void placeOrder(Long orderId, Long buyerId) {
+        log.info("Placing order: order_id={}, buyer_id={}", orderId, buyerId);
+        Order order = findOrderByIdWithAllDetails(orderId);
+        checkOrderAccess(order, buyerId);
+
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new IllegalStateException("Cannot place order with status: " + order.getStatus());
+        }
+
+        order.setStatus(OrderStatus.IN_PROGRESS);
+        orderRepository.save(order);
+        log.info("Order was placed: order_id={}, buyer_id={}", orderId, buyerId);
+    }
+
+    @Transactional
+    public void completeOrder(Long orderId, Long buyerId) {
+        log.info("Completing order: order_id={}, buyer_id={}", orderId, buyerId);
+        Order order = findOrderByIdWithAllDetails(orderId);
+        checkOrderAccess(order, buyerId);
+
+        if (order.getStatus() != OrderStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Cannot complete order with status: " + order.getStatus());
+        }
+
+        order.setStatus(OrderStatus.COMPLETED);
+        orderRepository.save(order);
+        log.info("Order was completed: order_id={}, buyer_id={}", orderId, buyerId);
+    }
+
+    @Transactional
+    public void cancelOrder(Long orderId, Long buyerId) {
+        log.info("Canceling order: order_id={}, buyer_id={}", orderId, buyerId);
+        Order order = findOrderByIdWithAllDetails(orderId);
+        checkOrderAccess(order, buyerId);
+
+        if (order.getStatus() != OrderStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Cannot cancel order with status: " + order.getStatus());
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+        log.info("Order was cancelled: order_id={}, buyer_id={}", orderId, buyerId);
+    }
+
+    private @NonNull Order findOrderByIdWithAllDetails(Long id) {
         log.debug("Finding order by id {}", id);
         return orderRepository.findByIdWithAllDetails(id).orElseThrow(() -> {
             log.warn("Order by id {} not found in database", id);
             return new EntityNotFoundException("Not found order by id: " + id);
         });
+    }
+
+    private @NonNull OrderItem findOrderItemByIdWithDetails(Long id) {
+        log.debug("Finding order item with id={}", id);
+        return orderItemRepository.findByIdWithOrderAndBuyer(id).orElseThrow(() -> {
+            log.warn("Order item with id {} not found in database", id);
+            return new EntityNotFoundException("Not found order item by id: " + id);
+        });
+    }
+
+    private void checkOrderItemOwnerShip(OrderItem item, Long buyerId) {
+        log.debug("Checking order item ownership, item_id={}, buyerId_id={}", item.getId(), buyerId);
+        if (!item.getOrder().getBuyer().getId().equals(buyerId)) {
+            log.warn("Buyer with id={} attempted to access order item with id={} owned by another buyer with id={}",
+                    buyerId, item.getId(), item.getOrder().getBuyer().getId());
+            throw new AccessDeniedException("This order item does not belong to the user");
+        }
     }
 
     private void checkOrderAccess(Order order, Long userId) {
