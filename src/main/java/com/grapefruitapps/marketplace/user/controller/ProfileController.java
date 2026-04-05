@@ -50,11 +50,20 @@ public class ProfileController {
     }
 
     @PatchMapping("/deletion")
-    public ResponseEntity<Void> requestDeletion(
+    public ResponseEntity<Void> deletionRequest(
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        log.info("Called requestDeletion: id={}", userDetails.getId());
-        userService.markUserForDeletion(userDetails.getId());
+        log.info("Called deletionRequest: id={}", userDetails.getId());
+        userService.deletionRequest(userDetails.getId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/deletion/cancel")
+    public ResponseEntity<Void> cancelDeletionRequest(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        log.info("Called cancelDeletionRequest: id={}", userDetails.getId());
+        userService.cancelDeletionRequest(userDetails.getId());
         return ResponseEntity.ok().build();
     }
 }

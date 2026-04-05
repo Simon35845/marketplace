@@ -83,7 +83,7 @@ public class ProfileProductController {
     ) {
         log.info("Called publishProduct: product_id={}, seller_id={}", id, userDetails.getId());
         productService.publishProduct(id, userDetails.getId());
-        return ResponseEntity.accepted().build();
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{id}/visibility")
@@ -95,7 +95,7 @@ public class ProfileProductController {
         log.info("Called changeProductVisibility: product_id={}, isVisible={}, seller_id={}",
                 id, isVisible, userDetails.getId());
         productService.changeProductVisibility(id, isVisible, userDetails.getId());
-        return ResponseEntity.accepted().build();
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")

@@ -1,6 +1,7 @@
 package com.grapefruitapps.marketplace.security;
 
 import com.grapefruitapps.marketplace.user.entity.User;
+import com.grapefruitapps.marketplace.user.entity.UserStatus;
 import com.grapefruitapps.marketplace.user.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,6 +24,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         User user = userRepository.findByUsername(username).orElseThrow(() ->
                 new UsernameNotFoundException("Not found user by username: " + username)
         );
+
+        if(user.getStatus() == UserStatus.DELETED){
+            log.warn("Attempt to login with deleted user: {}", username);
+            throw new UsernameNotFoundException("Account is unavailable");
+        }
+
         log.info("Found user with username: {}", username);
         return new UserDetailsImpl(user);
     }

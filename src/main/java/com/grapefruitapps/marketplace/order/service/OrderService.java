@@ -12,6 +12,7 @@ import com.grapefruitapps.marketplace.order.repository.OrderItemRepository;
 import com.grapefruitapps.marketplace.order.repository.OrderRepository;
 import com.grapefruitapps.marketplace.product.entity.Product;
 import com.grapefruitapps.marketplace.product.service.ProductService;
+import com.grapefruitapps.marketplace.user.entity.User;
 import com.grapefruitapps.marketplace.user.service.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -62,6 +63,7 @@ public class OrderService {
     public List<OrderDto> createOrdersFromCart(OrderRequestDto orderRequestDto, Long buyerId) {
         log.info("Creating order from cart: buyer_id={}", buyerId);
         Cart cart = cartService.findByBuyerIdWithAllDetails(buyerId);
+        userService.checkUserActivity(cart.getBuyer());
         cartService.checkCartIsEmpty(cart);
         List<Order> orders = new ArrayList<>();
 
@@ -76,6 +78,8 @@ public class OrderService {
             }
 
             for (Long sellerId : sellerIds) {
+                User seller = userService.findUserById(sellerId);
+                userService.checkUserActivity(seller);
                 Order createdOrder = createOneOrder(cart, sellerId, orderRequestDto);
                 orders.add(createdOrder);
             }
@@ -130,6 +134,7 @@ public class OrderService {
     public OrderDto changeItemQuantity(Long itemId, Integer quantity, Long buyerId) {
         log.info("Updating order item quantity: item_id={}, quantity={}, buyer_id={}", itemId, quantity, buyerId);
         OrderItem item = findOrderItemByIdWithDetails(itemId);
+        userService.checkUserActivity(item.getOrder().getBuyer());
         checkOrderItemOwnerShip(item, buyerId);
 
         item.setQuantity(quantity);
@@ -149,10 +154,11 @@ public class OrderService {
         return getOrderById(item.getOrder().getId(), buyerId);
     }
 
-        @Transactional
+    @Transactional
     public OrderDto updateOrder(Long orderId, OrderRequestDto orderRequestDto, Long buyerId) {
         log.info("Updating order: order_id={}, buyer_id={}", orderId, buyerId);
         Order order = findOrderByIdWithAllDetails(orderId);
+        userService.checkUserActivity(order.getBuyer());
         checkOrderAccess(order, buyerId);
 
         if (order.getStatus() != OrderStatus.PENDING) {
@@ -185,6 +191,7 @@ public class OrderService {
     public void placeOrder(Long orderId, Long buyerId) {
         log.info("Placing order: order_id={}, buyer_id={}", orderId, buyerId);
         Order order = findOrderByIdWithAllDetails(orderId);
+        userService.checkUserActivity(order.getBuyer());
         checkOrderAccess(order, buyerId);
 
         if (order.getStatus() != OrderStatus.PENDING) {

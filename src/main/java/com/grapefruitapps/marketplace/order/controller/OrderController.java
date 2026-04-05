@@ -111,7 +111,7 @@ public class OrderController {
     ) {
         log.info("Called placeOrder: order_id={}, buyer_id={}", id, userDetails.getId());
         orderService.placeOrder(id, userDetails.getId());
-        return ResponseEntity.accepted().build();
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{id}/complete")
@@ -121,7 +121,7 @@ public class OrderController {
     ) {
         log.info("Called completeOrder: order_id={}, buyer_id={}", id, userDetails.getId());
         orderService.completeOrder(id, userDetails.getId());
-        return ResponseEntity.accepted().build();
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{id}/cancel")
@@ -131,6 +131,6 @@ public class OrderController {
     ) {
         log.info("Called cancelOrder: order_id={}, buyer_id={}", id, userDetails.getId());
         orderService.cancelOrder(id, userDetails.getId());
-        return ResponseEntity.accepted().build();
+        return ResponseEntity.ok().build();
     }
 }

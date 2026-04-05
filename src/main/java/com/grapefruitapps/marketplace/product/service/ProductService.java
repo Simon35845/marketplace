@@ -4,6 +4,7 @@ import com.grapefruitapps.marketplace.product.dto.*;
 import com.grapefruitapps.marketplace.product.entity.Product;
 import com.grapefruitapps.marketplace.product.repository.ProductRepository;
 import com.grapefruitapps.marketplace.user.entity.User;
+import com.grapefruitapps.marketplace.user.entity.UserStatus;
 import com.grapefruitapps.marketplace.user.service.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -56,8 +57,13 @@ public class ProductService {
                 true,
                 pageable
         );
-        log.debug("Found {} products", products.size());
-        return products.stream().map(productMapper::toDto).toList();
+
+        List<Product> activeProducts = products.stream()
+                .filter(p->p.getSeller().getStatus() == UserStatus.ACTIVE)
+                .toList();
+
+        log.debug("Found {} products", activeProducts.size());
+        return activeProducts.stream().map(productMapper::toDto).toList();
     }
 
     public List<ProductDetailsDto> getProductsByFilter(ProductDetailsFilter filter, Long sellerId) {
@@ -82,6 +88,7 @@ public class ProductService {
     public ProductDetailsDto createProduct(ProductRequestDto productRequestDto, Long sellerId) {
         log.info("Creating new product: seller_id={}", sellerId);
         User seller = userService.findUserById(sellerId);
+        userService.checkUserActivity(seller);
         Product product = productMapper.toEntity(productRequestDto);
         product.setSeller(seller);
         product.setVisible(false);
@@ -101,6 +108,7 @@ public class ProductService {
     ) {
         log.info("Updating product: product_id={}, seller_id={}", productId, sellerId);
         Product product = findProductById(productId);
+        userService.checkUserActivity(product.getSeller());
         checkProductOwnership(product, sellerId);
 
         if (product.isPublished()) {
@@ -121,6 +129,7 @@ public class ProductService {
     public void publishProduct(Long productId, Long sellerId) {
         log.info("Publishing product: product_id={}, seller_id={}", productId, sellerId);
         Product product = findProductById(productId);
+        userService.checkUserActivity(product.getSeller());
         checkProductOwnership(product, sellerId);
 
         if (product.isPublished()) {
@@ -183,7 +192,10 @@ public class ProductService {
     }
 
     public void checkProductAvailability(Product product) {
-        if (!product.isPublished() || !product.isVisible()) {
+        log.debug("Checking product availability, product_id={}", product.getId());
+        boolean isActiveSeller = product.getSeller().getStatus() == UserStatus.ACTIVE;
+
+        if (!product.isPublished() || !product.isVisible() || !isActiveSeller) {
             throw new IllegalStateException("Product is not available");
         }
     }

@@ -1,5 +1,6 @@
 package com.grapefruitapps.marketplace.user.controller;
 
+import com.grapefruitapps.marketplace.security.UserDetailsImpl;
 import com.grapefruitapps.marketplace.user.dto.*;
 import com.grapefruitapps.marketplace.user.entity.UserStatus;
 import com.grapefruitapps.marketplace.user.service.UserService;
@@ -7,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,6 +40,7 @@ public class AdminUserController {
                 pageSize,
                 pageNumber
         );
+
         log.info("Called getAllUserData");
         return ResponseEntity.ok(userService.getUserDataByFilter(userDataFilter));
     }
@@ -49,9 +52,32 @@ public class AdminUserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
         log.info("Called deleteUser: id={}", id);
-        userService.deleteUser(id);
+        userService.deleteUser(id, userDetails.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/grant-admin")
+    public ResponseEntity<Void> grantAdminRole(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        log.info("Called grantAdminRole: id={}", id);
+        userService.grantAdminRole(id, userDetails.getId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{id}/revoke-admin")
+    public ResponseEntity<Void> revokeAdminRole(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        log.info("Called revokeAdminRole: id={}", id);
+        userService.revokeAdminRole(id, userDetails.getId());
         return ResponseEntity.ok().build();
     }
 }

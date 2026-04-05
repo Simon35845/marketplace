@@ -52,6 +52,7 @@ public class CartService {
         int quantity = itemDto.quantity();
         log.info("Adding item to cart: product_id={}, quantity={}, buyer_id={}", productId, quantity, buyerId);
         Cart cart = getOrCreateCart(buyerId);
+        userService.checkUserActivity(cart.getBuyer());
         Product product = productService.findProductById(productId);
 
         if (productService.isProductOwner(product, buyerId)) {
@@ -78,6 +79,7 @@ public class CartService {
     public CartDto changeItemQuantity(Long itemId, Integer quantity, Long buyerId) {
         log.info("Updating cart item quantity: item_id={}, quantity={}, buyer_id={}", itemId, quantity, buyerId);
         CartItem item = findCartItemByIdWithCartAndBuyer(itemId);
+        userService.checkUserActivity(item.getCart().getBuyer());
         checkCartItemOwnerShip(item, buyerId);
 
         item.setQuantity(quantity);
