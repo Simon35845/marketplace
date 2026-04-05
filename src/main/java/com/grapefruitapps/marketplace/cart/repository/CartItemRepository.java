@@ -15,7 +15,8 @@ import java.util.Optional;
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     @Query("""
             SELECT ci FROM CartItem ci
-            LEFT JOIN FETCH ci.cart.buyer
+            LEFT JOIN FETCH ci.cart c
+            LEFT JOIN FETCH c.buyer b
             WHERE ci.id = :id
             """)
     Optional<CartItem> findByIdWithCartAndBuyer(@Param("id") Long id);
