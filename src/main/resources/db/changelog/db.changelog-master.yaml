@@ -23,3 +23,5 @@ databaseChangeLog:
       file: db/changelog/changeset/011-update-products-table.yaml
   - include:
       file: db/changelog/changeset/012-update-orders-table.yaml
+  - include:
+      file: db/changelog/changeset/013-insert-first-admin.yaml

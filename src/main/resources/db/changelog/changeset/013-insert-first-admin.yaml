@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-insert-first
+      author: grapefruitapps
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: username
+                  value: "first_admin"
+              - column:
+                  name: password
+                  value: "$2a$10$uQDQXYF4iEuSZO/C.A.QR.UZ3T9IQp0kf6xwYI94dWz492CN9ihQm"
+              - column:
+                  name: name
+                  value: "Initial Administrator"
+              - column:
+                  name: email
+                  value: "firstadmin@simplemarketplace.com"
+              - column:
+                  name: created_at
+                  valueComputed: "CURRENT_TIMESTAMP"
+              - column:
+                  name: status
+                  value: "ACTIVE"
+        - insert:
+            tableName: user_roles
+            columns:
+              - column:
+                  name: user_id
+                  valueComputed: "(SELECT id FROM users WHERE username = 'first_admin')"
+              - column:
+                  name: role_id
+                  valueComputed: "(SELECT id FROM roles WHERE name = 'ROLE_ADMIN')"
