@@ -6,6 +6,7 @@ import com.grapefruitapps.marketplace.product.repository.ProductRepository;
 import com.grapefruitapps.marketplace.user.entity.User;
 import com.grapefruitapps.marketplace.user.entity.UserStatus;
 import com.grapefruitapps.marketplace.user.service.UserService;
+import com.grapefruitapps.marketplace.utils.PaginationUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,9 +23,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class ProductService {
-    public static final int DEFAULT_PAGE_SIZE = 10;
-    public static final int DEFAULT_PAGE_NUMBER = 0;
-
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final UserService userService;
@@ -36,8 +34,8 @@ public class ProductService {
         return productMapper.toDto(product);
     }
 
-    public ProductDetailsDto getProductById(Long productId, Long sellerId) {
-        log.debug("Get product by product_id={} and seller_id={}", productId, sellerId);
+    public ProductDataDto getProductDataById(Long productId, Long sellerId) {
+        log.debug("Get product data by product_id={} and seller_id={}", productId, sellerId);
         Product product = findProductById(productId);
         checkProductOwnership(product, sellerId);
         return productMapper.toDetailsDto(product);
@@ -45,50 +43,50 @@ public class ProductService {
 
     public List<ProductDto> getProductsByFilter(ProductFilter filter) {
         log.debug("Get products by filter");
-        int pageSize = filter.pageSize() != null ? filter.pageSize() : DEFAULT_PAGE_SIZE;
-        int pageNumber = filter.pageNumber() != null ? filter.pageNumber() : DEFAULT_PAGE_NUMBER;
-        Pageable pageable = Pageable.ofSize(pageSize).withPage(pageNumber);
+        Pageable pageable = PaginationUtil.getPageable(filter.pageSize(), filter.pageNumber());
 
         List<Product> products = productRepository.findProductsByFilter(
-                filter.sellerId(),
                 filter.name(),
                 filter.category(),
+                filter.sellerId(),
+                filter.sellerName(),
                 true,
                 true,
                 pageable
         );
 
         List<Product> activeProducts = products.stream()
-                .filter(p->p.getSeller().getStatus() == UserStatus.ACTIVE)
+                .filter(p -> p.getSeller().getStatus() == UserStatus.ACTIVE)
                 .toList();
 
         log.debug("Found {} products", activeProducts.size());
         return activeProducts.stream().map(productMapper::toDto).toList();
     }
 
-    public List<ProductDetailsDto> getProductsByFilter(ProductDetailsFilter filter, Long sellerId) {
-        log.debug("Get products by filter by seller_id={}", sellerId);
-        int pageSize = filter.pageSize() != null ? filter.pageSize() : DEFAULT_PAGE_SIZE;
-        int pageNumber = filter.pageNumber() != null ? filter.pageNumber() : DEFAULT_PAGE_NUMBER;
-        Pageable pageable = Pageable.ofSize(pageSize).withPage(pageNumber);
+    public List<ProductDataDto> getProductsDataByFilter(ProductDataFilter filter, Long sellerId) {
+        log.debug("Get products data by filter by seller_id={}", sellerId);
+        Pageable pageable = PaginationUtil.getPageable(filter.pageSize(), filter.pageNumber());
 
         List<Product> products = productRepository.findProductsByFilter(
-                sellerId,
                 filter.name(),
                 filter.category(),
+                sellerId,
+                null,
                 filter.isVisible(),
                 filter.isPublished(),
                 pageable
         );
+
         log.debug("Found {} products by seller_id={}", products.size(), sellerId);
         return products.stream().map(productMapper::toDetailsDto).toList();
     }
 
     @Transactional
-    public ProductDetailsDto createProduct(ProductRequestDto productRequestDto, Long sellerId) {
+    public ProductDataDto createProduct(ProductRequestDto productRequestDto, Long sellerId) {
         log.info("Creating new product: seller_id={}", sellerId);
         User seller = userService.findUserById(sellerId);
         userService.checkUserActivity(seller);
+
         Product product = productMapper.toEntity(productRequestDto);
         product.setSeller(seller);
         product.setVisible(false);
@@ -101,7 +99,7 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductDetailsDto updateProduct(
+    public ProductDataDto updateProduct(
             Long productId,
             ProductRequestDto productRequestDto,
             Long sellerId
@@ -123,6 +121,20 @@ public class ProductService {
         Product savedProduct = productRepository.save(product);
         log.info("Product was updated: product_id={}, seller_id={}", productId, sellerId);
         return productMapper.toDetailsDto(savedProduct);
+    }
+
+    @Transactional
+    public void deleteProduct(Long productId, Long sellerId) {
+        log.info("Deleting product: product_id={}, seller_id={}", productId, sellerId);
+        Product product = findProductById(productId);
+        checkProductOwnership(product, sellerId);
+
+        if (!product.getOrderItems().isEmpty()) {
+            throw new IllegalStateException("Cannot delete product which related to orders");
+        }
+
+        productRepository.deleteById(productId);
+        log.info("Product was deleted: product_id={}, seller_id={}", productId, sellerId);
     }
 
     @Transactional
@@ -156,20 +168,6 @@ public class ProductService {
         product.setVisible(isVisible);
         productRepository.save(product);
         log.info("Product visibility was changed: product_id={}, seller_id={}", productId, sellerId);
-    }
-
-    @Transactional
-    public void deleteProduct(Long productId, Long sellerId) {
-        log.info("Deleting product: product_id={}, seller_id={}", productId, sellerId);
-        Product product = findProductById(productId);
-        checkProductOwnership(product, sellerId);
-
-        if (!product.getOrderItems().isEmpty()) {
-            throw new IllegalStateException("Cannot delete product which related to orders");
-        }
-
-        productRepository.deleteById(productId);
-        log.info("Product was deleted: product_id={}, seller_id={}", productId, sellerId);
     }
 
     public @NonNull Product findProductById(Long id) {

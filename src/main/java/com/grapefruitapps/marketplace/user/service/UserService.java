@@ -6,6 +6,7 @@ import com.grapefruitapps.marketplace.user.entity.User;
 import com.grapefruitapps.marketplace.user.entity.UserStatus;
 import com.grapefruitapps.marketplace.user.repository.RoleRepository;
 import com.grapefruitapps.marketplace.user.repository.UserRepository;
+import com.grapefruitapps.marketplace.utils.PaginationUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,9 +23,6 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class UserService {
-    public static final int DEFAULT_PAGE_SIZE = 10;
-    public static final int DEFAULT_PAGE_NUMBER = 0;
-
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
@@ -43,16 +41,14 @@ public class UserService {
         return userMapper.toDataDto(user);
     }
 
-    public List<UserDto> getUsersByFilter(UserFilter userFilter) {
+    public List<UserDto> getUsersByFilter(UserFilter filter) {
         log.debug("Get users by filter");
-        int pageSize = userFilter.pageSize() != null ? userFilter.pageSize() : DEFAULT_PAGE_SIZE;
-        int pageNumber = userFilter.pageNumber() != null ? userFilter.pageNumber() : DEFAULT_PAGE_NUMBER;
-        Pageable pageable = Pageable.ofSize(pageSize).withPage(pageNumber);
+        Pageable pageable = PaginationUtil.getPageable(filter.pageSize(), filter.pageNumber());
 
         List<User> users = userRepository.findUsersByFilter(
-                userFilter.name(),
-                userFilter.phone(),
-                userFilter.email(),
+                filter.name(),
+                filter.phone(),
+                filter.email(),
                 UserStatus.ACTIVE,
                 "ROLE_USER",
                 pageable
@@ -62,18 +58,16 @@ public class UserService {
         return users.stream().map(userMapper::toDto).toList();
     }
 
-    public List<UserDataDto> getUserDataByFilter(UserDataFilter userDataFilter) {
-        log.debug("Get user data by filter");
-        int pageSize = userDataFilter.pageSize() != null ? userDataFilter.pageSize() : DEFAULT_PAGE_SIZE;
-        int pageNumber = userDataFilter.pageNumber() != null ? userDataFilter.pageNumber() : DEFAULT_PAGE_NUMBER;
-        Pageable pageable = Pageable.ofSize(pageSize).withPage(pageNumber);
+    public List<UserDataDto> getUsersDataByFilter(UserDataFilter filter) {
+        log.debug("Get users data by filter");
+        Pageable pageable = PaginationUtil.getPageable(filter.pageSize(), filter.pageNumber());
 
         List<User> users = userRepository.findUsersByFilter(
-                userDataFilter.name(),
-                userDataFilter.phone(),
-                userDataFilter.email(),
-                userDataFilter.status(),
-                userDataFilter.role(),
+                filter.name(),
+                filter.phone(),
+                filter.email(),
+                filter.status(),
+                filter.role(),
                 pageable
         );
 

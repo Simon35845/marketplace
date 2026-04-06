@@ -1,6 +1,6 @@
 package com.grapefruitapps.marketplace.product.dto;
 
-public record ProductDetailsFilter(
+public record ProductDataFilter(
         String name,
         String category,
         Boolean isVisible,

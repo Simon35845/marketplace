@@ -21,8 +21,15 @@ import java.util.List;
 public class AdminUserController {
     private final UserService userService;
 
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDataDto> getUserById(@PathVariable Long id) {
+        log.info("Called getUserDataById: id={}", id);
+        UserDataDto userDataDto = userService.getUserDataById(id);
+        return ResponseEntity.ok(userDataDto);
+    }
+
     @GetMapping
-    public ResponseEntity<List<UserDataDto>> getAllUserData(
+    public ResponseEntity<List<UserDataDto>> getUsersByFilter(
             @RequestParam(name = "name", required = false) String name,
             @RequestParam(name = "phone", required = false) String phone,
             @RequestParam(name = "email", required = false) String email,
@@ -41,14 +48,9 @@ public class AdminUserController {
                 pageNumber
         );
 
-        log.info("Called getAllUserData");
-        return ResponseEntity.ok(userService.getUserDataByFilter(userDataFilter));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<UserDataDto> getUserDataById(@PathVariable Long id) {
-        log.info("Called getUserDataById: id={}", id);
-        return ResponseEntity.ok(userService.getUserDataById(id));
+        log.info("Called getUsersByFilter");
+        List<UserDataDto> userDataDtoList = userService.getUsersDataByFilter(userDataFilter);
+        return ResponseEntity.ok(userDataDtoList);
     }
 
     @DeleteMapping("/{id}")

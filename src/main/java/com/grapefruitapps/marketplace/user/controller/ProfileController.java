@@ -26,7 +26,8 @@ public class ProfileController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         log.info("Called getCurrentUser: id={}", userDetails.getId());
-        return ResponseEntity.ok(userService.getUserById(userDetails.getId()));
+        UserDto userDto = userService.getUserById(userDetails.getId());
+        return ResponseEntity.ok(userDto);
     }
 
     @PutMapping("/update")
@@ -35,8 +36,8 @@ public class ProfileController {
             @RequestBody @Valid UserUpdateDto userUpdateDto
     ) {
         log.info("Called updateUser: id={}", userDetails.getId());
-        UserDto updatedUser = userService.updateUser(userDetails.getId(), userUpdateDto);
-        return ResponseEntity.ok(updatedUser);
+        UserDto userDto = userService.updateUser(userDetails.getId(), userUpdateDto);
+        return ResponseEntity.ok(userDto);
     }
 
     @PatchMapping("/password")

@@ -22,8 +22,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("""
             SELECT DISTINCT u FROM User u
             LEFT JOIN u.roles r
-            WITH (:roleName IS NULL OR r.name = :roleName)
-            WHERE (:name IS NULL OR u.name = :name)
+            WHERE (:roleName IS NULL OR r.name = :roleName)
+            AND (:name IS NULL OR u.name = :name)
             AND (:phone IS NULL OR u.phone = :phone)
             AND (:email IS NULL OR u.email = :email)
             AND (:status IS NULL OR u.status = :status)

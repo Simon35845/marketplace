@@ -52,17 +52,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDto);
     }
 
-    @ExceptionHandler(DuplicateFieldException.class)
-    public ResponseEntity<ErrorResponseDto> handleDuplicateField(DuplicateFieldException e) {
-        log.error("Handle duplicate field", e);
-        ErrorResponseDto errorDto = new ErrorResponseDto(
-                "Duplicate unique field",
-                e.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorDto);
-    }
-
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponseDto> handleAccessDenied(AccessDeniedException e) {
         log.error("Handle access denied", e);

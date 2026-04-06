@@ -8,6 +8,7 @@ public record ProductDto(
         BigDecimal price,
         String category,
         String description,
-        Long sellerId
+        Long sellerId,
+        String sellerName
 ) {
 }

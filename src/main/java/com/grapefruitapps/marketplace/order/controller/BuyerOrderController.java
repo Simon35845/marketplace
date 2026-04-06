@@ -1,7 +1,11 @@
 package com.grapefruitapps.marketplace.order.controller;
 
 import com.grapefruitapps.marketplace.order.dto.OrderDto;
+import com.grapefruitapps.marketplace.order.dto.OrderFilter;
+import com.grapefruitapps.marketplace.order.dto.OrderItemDto;
 import com.grapefruitapps.marketplace.order.dto.OrderRequestDto;
+import com.grapefruitapps.marketplace.order.entity.DeliveryType;
+import com.grapefruitapps.marketplace.order.entity.OrderStatus;
 import com.grapefruitapps.marketplace.order.service.OrderService;
 import com.grapefruitapps.marketplace.security.UserDetailsImpl;
 import jakarta.validation.Valid;
@@ -18,12 +22,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/profile/order")
+@RequestMapping("/buyer/order")
 @PreAuthorize("isAuthenticated()")
 @Slf4j
 @RequiredArgsConstructor
 @Validated
-public class OrderController {
+public class BuyerOrderController {
     private final OrderService orderService;
 
     @GetMapping("/{id}")
@@ -32,23 +36,50 @@ public class OrderController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         log.info("Called getOrderById: order_id={}, user_id={}", id, userDetails.getId());
-        return ResponseEntity.ok(orderService.getOrderById(id, userDetails.getId()));
+        OrderDto orderDto = orderService.getOrderById(id, userDetails.getId());
+        return ResponseEntity.ok(orderDto);
     }
 
-    @GetMapping("/buyer")
-    public ResponseEntity<List<OrderDto>> getOrdersByBuyerId(
+    @GetMapping("/items/{id}")
+    public ResponseEntity<OrderItemDto> getOrderItemById(
+            @PathVariable Long id,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        log.info("Called getOrdersByBuyerId: buyer_id={}", userDetails.getId());
-        return ResponseEntity.ok(orderService.getOrdersByBuyerId(userDetails.getId()));
+        log.info("Called getOrderItemById: order_id={}, user_id={}", id, userDetails.getId());
+        OrderItemDto orderItemDto = orderService.getOrderItemById(id, userDetails.getId());
+        return ResponseEntity.ok(orderItemDto);
     }
 
-    @GetMapping("/seller")
-    public ResponseEntity<List<OrderDto>> getOrdersBySellerId(
+    @GetMapping
+    public ResponseEntity<List<OrderDto>> getOrdersByFilter(
+            @RequestParam(name = "orderNumber", required = false) String orderNumber,
+            @RequestParam(name = "buyerId", required = false) Long buyerId,
+            @RequestParam(name = "buyerName", required = false) String buyerName,
+            @RequestParam(name = "sellerId", required = false) Long sellerId,
+            @RequestParam(name = "sellerName", required = false) String sellerName,
+            @RequestParam(name = "deliveryType", required = false) DeliveryType deliveryType,
+            @RequestParam(name = "status", required = false) OrderStatus status,
+            @RequestParam(name = "shippingAddress", required = false) String shippingAddress,
+            @RequestParam(name = "pageSize", required = false) Integer pageSize,
+            @RequestParam(name = "pageNumber", required = false) Integer pageNumber,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        log.info("Called getOrdersBySellerId: seller_id={}", userDetails.getId());
-        return ResponseEntity.ok(orderService.getOrdersBySellerId(userDetails.getId()));
+        OrderFilter filter = new OrderFilter(
+                orderNumber,
+                buyerId,
+                buyerName,
+                sellerId,
+                sellerName,
+                deliveryType,
+                status,
+                shippingAddress,
+                pageSize,
+                pageNumber
+        );
+
+        log.info("Called getOrdersByFilter: buyer_id={}", userDetails.getId());
+        List<OrderDto> orderDtoList = orderService.getBuyerOrdersByFilter(filter, userDetails.getId());
+        return ResponseEntity.ok(orderDtoList);
     }
 
     @PostMapping("/from-cart")
@@ -57,30 +88,30 @@ public class OrderController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         log.info("Called createOrdersFromCart: buyer_id={}", userDetails.getId());
-        List<OrderDto> createdOrders = orderService.createOrdersFromCart(orderRequestDto, userDetails.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdOrders);
+        List<OrderDto> orderDtoList = orderService.createOrdersFromCart(orderRequestDto, userDetails.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderDtoList);
     }
 
     @PatchMapping("/items/{id}")
-    public ResponseEntity<OrderDto> changeItemQuantity(
+    public ResponseEntity<OrderItemDto> changeItemQuantity(
             @PathVariable Long id,
             @RequestParam @Positive(message = "Quantity must be positive") Integer quantity,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         log.info("Called changeItemQuantity: item_id={}, quantity={}, buyer_id={}",
                 id, quantity, userDetails.getId());
-        OrderDto orderDto = orderService.changeItemQuantity(id, quantity, userDetails.getId());
-        return ResponseEntity.ok(orderDto);
+        OrderItemDto orderItemDto = orderService.changeItemQuantity(id, quantity, userDetails.getId());
+        return ResponseEntity.ok(orderItemDto);
     }
 
     @DeleteMapping("/items/{id}")
-    public ResponseEntity<OrderDto> deleteOrderItem(
+    public ResponseEntity<Void> deleteOrderItem(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         log.info("Called deleteOrderItem: item_id={}, buyer_id={}", id, userDetails.getId());
-        OrderDto orderDto = orderService.deleteItem(id, userDetails.getId());
-        return ResponseEntity.ok(orderDto);
+        orderService.deleteItem(id, userDetails.getId());
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}")

@@ -22,7 +22,9 @@ public class CartMapper {
                 item.getProduct().getName(),
                 item.getProduct().getPrice(),
                 item.getQuantity(),
-                subTotalPrice
+                subTotalPrice,
+                item.getProduct().getSeller().getId(),
+                item.getProduct().getSeller().getName()
         );
     }
 

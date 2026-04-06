@@ -4,6 +4,8 @@ import com.grapefruitapps.marketplace.cart.entity.Cart;
 import com.grapefruitapps.marketplace.cart.entity.CartItem;
 import com.grapefruitapps.marketplace.cart.service.CartService;
 import com.grapefruitapps.marketplace.order.dto.OrderDto;
+import com.grapefruitapps.marketplace.order.dto.OrderFilter;
+import com.grapefruitapps.marketplace.order.dto.OrderItemDto;
 import com.grapefruitapps.marketplace.order.dto.OrderRequestDto;
 import com.grapefruitapps.marketplace.order.entity.Order;
 import com.grapefruitapps.marketplace.order.entity.OrderItem;
@@ -14,10 +16,12 @@ import com.grapefruitapps.marketplace.product.entity.Product;
 import com.grapefruitapps.marketplace.product.service.ProductService;
 import com.grapefruitapps.marketplace.user.entity.User;
 import com.grapefruitapps.marketplace.user.service.UserService;
+import com.grapefruitapps.marketplace.utils.PaginationUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,22 +43,55 @@ public class OrderService {
     private final OrderNumberGenerator generator;
 
     public OrderDto getOrderById(Long orderId, Long userId) {
-        log.debug("Get order by id={}", orderId);
+        log.debug("Get order by order_id={}, user_id={}", orderId, userId);
         Order order = findOrderByIdWithAllDetails(orderId);
         checkOrderAccess(order, userId);
         return orderMapper.toOrderDto(order);
     }
 
-    public List<OrderDto> getOrdersBySellerId(Long sellerId) {
-        log.debug("Get orders by seller_id={}", sellerId);
-        List<Order> orders = orderRepository.findOrdersBySellerId(sellerId);
+    public OrderItemDto getOrderItemById(Long itemId, Long userId) {
+        log.debug("Get order item by item_id={}, user_id={}", itemId, userId);
+        OrderItem item = findOrderItemByIdWithAllDetails(itemId);
+        checkOrderAccess(item.getOrder(), userId);
+        return orderMapper.toOrderItemDto(item);
+    }
+
+    public List<OrderDto> getBuyerOrdersByFilter(OrderFilter filter, Long buyerId) {
+        log.debug("Get buyer orders by filter, buyer_id={}", buyerId);
+        Pageable pageable = PaginationUtil.getPageable(filter.pageSize(), filter.pageNumber());
+
+        List<Order> orders = orderRepository.findOrdersByFilter(
+                filter.orderNumber(),
+                buyerId,
+                null,
+                filter.sellerId(),
+                filter.sellerName(),
+                filter.deliveryType(),
+                filter.status(),
+                filter.shippingAddress(),
+                pageable
+        );
+
         log.debug("Found {} orders", orders.size());
         return orders.stream().map(orderMapper::toOrderDto).toList();
     }
 
-    public List<OrderDto> getOrdersByBuyerId(Long buyerId) {
-        log.debug("Get orders by buyer_id={}", buyerId);
-        List<Order> orders = orderRepository.findOrdersByBuyerId(buyerId);
+    public List<OrderDto> getSellerOrdersByFilter(OrderFilter filter, Long sellerId) {
+        log.debug("Get seller orders by filter, seller_id={}", sellerId);
+        Pageable pageable = PaginationUtil.getPageable(filter.pageSize(), filter.pageNumber());
+
+        List<Order> orders = orderRepository.findOrdersByFilter(
+                filter.orderNumber(),
+                filter.buyerId(),
+                filter.buyerName(),
+                sellerId,
+                null,
+                filter.deliveryType(),
+                filter.status(),
+                filter.shippingAddress(),
+                pageable
+        );
+
         log.debug("Found {} orders", orders.size());
         return orders.stream().map(orderMapper::toOrderDto).toList();
     }
@@ -62,7 +99,7 @@ public class OrderService {
     @Transactional
     public List<OrderDto> createOrdersFromCart(OrderRequestDto orderRequestDto, Long buyerId) {
         log.info("Creating order from cart: buyer_id={}", buyerId);
-        Cart cart = cartService.findByBuyerIdWithAllDetails(buyerId);
+        Cart cart = cartService.findCartByBuyerIdWithAllDetails(buyerId);
         userService.checkUserActivity(cart.getBuyer());
         cartService.checkCartIsEmpty(cart);
         List<Order> orders = new ArrayList<>();
@@ -125,33 +162,33 @@ public class OrderService {
                 totalPrice = totalPrice.add(orderItem.getSubTotalPrice());
             }
         }
+
         orderToSave.setTotalPrice(totalPrice);
         log.info("Order was created: buyer_id={}, seller_id={}", cart.getBuyer().getId(), sellerId);
         return orderRepository.save(orderToSave);
     }
 
     @Transactional
-    public OrderDto changeItemQuantity(Long itemId, Integer quantity, Long buyerId) {
+    public OrderItemDto changeItemQuantity(Long itemId, Integer quantity, Long buyerId) {
         log.info("Updating order item quantity: item_id={}, quantity={}, buyer_id={}", itemId, quantity, buyerId);
-        OrderItem item = findOrderItemByIdWithDetails(itemId);
+        OrderItem item = findOrderItemByIdWithAllDetails(itemId);
         userService.checkUserActivity(item.getOrder().getBuyer());
         checkOrderItemOwnerShip(item, buyerId);
 
         item.setQuantity(quantity);
         orderItemRepository.save(item);
         log.info("Order item quantity was updated");
-        return getOrderById(item.getOrder().getId(), buyerId);
+        return orderMapper.toOrderItemDto(item);
     }
 
     @Transactional
-    public OrderDto deleteItem(Long itemId, Long buyerId) {
+    public void deleteItem(Long itemId, Long buyerId) {
         log.info("Deleting order item: itemId={}, buyer_id={}", itemId, buyerId);
-        OrderItem item = findOrderItemByIdWithDetails(itemId);
+        OrderItem item = findOrderItemByIdWithAllDetails(itemId);
         checkOrderItemOwnerShip(item, buyerId);
 
         orderItemRepository.deleteById(itemId);
         log.info("Order item was deleted");
-        return getOrderById(item.getOrder().getId(), buyerId);
     }
 
     @Transactional
@@ -241,9 +278,9 @@ public class OrderService {
         });
     }
 
-    private @NonNull OrderItem findOrderItemByIdWithDetails(Long id) {
+    private @NonNull OrderItem findOrderItemByIdWithAllDetails(Long id) {
         log.debug("Finding order item with id={}", id);
-        return orderItemRepository.findByIdWithOrderAndBuyer(id).orElseThrow(() -> {
+        return orderItemRepository.findByIdWithAllDetails(id).orElseThrow(() -> {
             log.warn("Order item with id {} not found in database", id);
             return new EntityNotFoundException("Not found order item by id: " + id);
         });

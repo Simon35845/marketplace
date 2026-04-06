@@ -22,7 +22,7 @@ public class AuthController {
             @RequestBody @Valid UserRegisterDto userRegisterDto
     ) {
         log.info("Called createUser");
-        UserDto createdUser = userService.createUser(userRegisterDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+        UserDto userDto = userService.createUser(userRegisterDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(userDto);
     }
 }

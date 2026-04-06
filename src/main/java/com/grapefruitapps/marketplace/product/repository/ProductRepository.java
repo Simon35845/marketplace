@@ -20,18 +20,21 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findByIdWithSeller(@Param("id") Long id);
 
     @Query("""
-            SELECT p FROM Product p
-                    WHERE (:sellerId IS NULL OR p.seller.id = :sellerId)
-            AND (:name IS NULL OR p.name = :name)
+            SELECT DISTINCT p FROM Product p
+            LEFT JOIN FETCH p.seller s
+            WHERE (:name IS NULL OR p.name = :name)
             AND (:category IS NULL OR p.category = :category)
+            AND (:sellerId IS NULL OR s.id = :sellerId)
+            AND (:sellerName IS NULL OR s.name = :sellerName)
             AND (:isVisible IS NULL OR p.isVisible = :isVisible)
             AND (:isPublished IS NULL OR p.isPublished = :isPublished)
             ORDER BY p.id
             """)
     List<Product> findProductsByFilter(
-            @Param("sellerId") Long sellerId,
             @Param("name") String name,
             @Param("category") String category,
+            @Param("sellerId") Long sellerId,
+            @Param("sellerName") String sellerName,
             @Param("isVisible") Boolean isVisible,
             @Param("isPublished") Boolean isPublished,
             Pageable pageable

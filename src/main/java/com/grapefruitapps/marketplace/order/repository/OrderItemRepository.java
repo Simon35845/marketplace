@@ -12,9 +12,11 @@ import java.util.Optional;
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     @Query("""
             SELECT oi FROM OrderItem oi
+            LEFT JOIN FETCH oi.product
             LEFT JOIN FETCH oi.order o
-            LEFT JOIN FETCH o.buyer b
-            WHERE oi.id=:id
+            LEFT JOIN FETCH o.buyer
+            LEFT JOIN FETCH o.seller
+            WHERE oi.id = :id
             """)
-    Optional<OrderItem> findByIdWithOrderAndBuyer(@Param("id") Long id);
+    Optional<OrderItem> findByIdWithAllDetails(@Param("id") Long id);
 }

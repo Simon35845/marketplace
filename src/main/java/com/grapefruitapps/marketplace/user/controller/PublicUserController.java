@@ -17,8 +17,15 @@ import java.util.List;
 public class PublicUserController {
     private final UserService userService;
 
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
+        log.info("Called getUserById: id={}", id);
+        UserDto userDto = userService.getUserById(id);
+        return ResponseEntity.ok(userDto);
+    }
+
     @GetMapping
-    public ResponseEntity<List<UserDto>> getAllUsers(
+    public ResponseEntity<List<UserDto>> getUsersByFilter(
             @RequestParam(name = "name", required = false) String name,
             @RequestParam(name = "phone", required = false) String phone,
             @RequestParam(name = "email", required = false) String email,
@@ -32,13 +39,8 @@ public class PublicUserController {
                 pageSize,
                 pageNumber
         );
-        log.info("Called getAllUsers");
-        return ResponseEntity.ok(userService.getUsersByFilter(userFilter));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
-        log.info("Called getUserById: id={}", id);
-        return ResponseEntity.ok(userService.getUserById(id));
+        log.info("Called getUsersByFilter");
+        List<UserDto> userDtoList = userService.getUsersByFilter(userFilter);
+        return ResponseEntity.ok(userDtoList);
     }
 }

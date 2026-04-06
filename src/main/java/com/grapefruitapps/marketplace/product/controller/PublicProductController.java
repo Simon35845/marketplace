@@ -17,11 +17,21 @@ import java.util.List;
 public class PublicProductController {
     private final ProductService productService;
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductDto> getProductById(
+            @PathVariable Long id
+    ) {
+        log.info("Called getProductById: id={}", id);
+        ProductDto productDto = productService.getProductById(id);
+        return ResponseEntity.ok(productDto);
+    }
+
     @GetMapping
-    public ResponseEntity<List<ProductDto>> getAllProducts(
+    public ResponseEntity<List<ProductDto>> getProductsByFilter(
             @RequestParam(name = "name", required = false) String name,
             @RequestParam(name = "category", required = false) String category,
             @RequestParam(name = "sellerId", required = false) Long sellerId,
+            @RequestParam(name = "sellerId", required = false) String sellerName,
             @RequestParam(name = "pageSize", required = false) Integer pageSize,
             @RequestParam(name = "pageNumber", required = false) Integer pageNumber
     ) {
@@ -29,18 +39,12 @@ public class PublicProductController {
                 name,
                 category,
                 sellerId,
+                sellerName,
                 pageSize,
                 pageNumber
         );
-        log.info("Called getAllProducts");
-        return ResponseEntity.ok(productService.getProductsByFilter(filter));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ProductDto> getProductById(
-            @PathVariable Long id
-    ) {
-        log.info("Called getProductById: id={}", id);
-        return ResponseEntity.ok(productService.getProductById(id));
+        log.info("Called getProductsByFilter");
+        List<ProductDto> productDtoList = productService.getProductsByFilter(filter);
+        return ResponseEntity.ok(productDtoList);
     }
 }

@@ -1,6 +1,7 @@
 package com.grapefruitapps.marketplace.cart.service;
 
 import com.grapefruitapps.marketplace.cart.dto.CartDto;
+import com.grapefruitapps.marketplace.cart.dto.CartItemDto;
 import com.grapefruitapps.marketplace.cart.dto.CartItemRequestDto;
 import com.grapefruitapps.marketplace.cart.entity.Cart;
 import com.grapefruitapps.marketplace.cart.entity.CartItem;
@@ -30,20 +31,26 @@ public class CartService {
     private final ProductService productService;
     private final CartMapper cartMapper;
 
-    public CartDto getCart(Long buyerId) {
+    public CartDto getCartByBuyerId(Long buyerId) {
         log.debug("Get cart by buyer_id={}", buyerId);
-        Cart cart = findByBuyerIdWithAllDetails(buyerId);
+        Cart cart = findCartByBuyerIdWithAllDetails(buyerId);
         return cartMapper.toCartDto(cart);
     }
 
+    public CartItemDto getCartItemById(Long itemId, Long buyerId){
+        log.debug("Get cart item by item_id={}, buyer_id={}", itemId, buyerId);
+        CartItem item = findCartItemByIdWithAllDetails(itemId);
+        checkCartItemOwnerShip(item, buyerId);
+        return cartMapper.toCartItemDto(item);
+    }
+
     @Transactional
-    public CartDto clearCart(Long buyerId) {
+    public void clearCart(Long buyerId) {
         log.debug("Clear cart by buyer_id={}", buyerId);
         Cart cart = findCartByBuyerId(buyerId);
         cartItemRepository.deleteAllByCartId(cart.getId());
         cart.getCartItems().clear();
         log.info("Cart was cleared");
-        return cartMapper.toCartDto(cart);
     }
 
     @Transactional
@@ -72,31 +79,30 @@ public class CartService {
             cartItemRepository.save(item);
             log.info("Item added to cart: id={}", item.getId());
         }
-        return getCart(buyerId);
+        return getCartByBuyerId(buyerId);
     }
 
     @Transactional
-    public CartDto changeItemQuantity(Long itemId, Integer quantity, Long buyerId) {
+    public CartItemDto changeItemQuantity(Long itemId, Integer quantity, Long buyerId) {
         log.info("Updating cart item quantity: item_id={}, quantity={}, buyer_id={}", itemId, quantity, buyerId);
-        CartItem item = findCartItemByIdWithCartAndBuyer(itemId);
+        CartItem item = findCartItemByIdWithAllDetails(itemId);
         userService.checkUserActivity(item.getCart().getBuyer());
         checkCartItemOwnerShip(item, buyerId);
 
         item.setQuantity(quantity);
         cartItemRepository.save(item);
         log.info("Cart item quantity was updated");
-        return getCart(buyerId);
+        return cartMapper.toCartItemDto(item);
     }
 
     @Transactional
-    public CartDto deleteItem(Long itemId, Long buyerId) {
+    public void deleteItem(Long itemId, Long buyerId) {
         log.info("Deleting cart item: cartItemId={}, buyer_id={}", itemId, buyerId);
-        CartItem item = findCartItemByIdWithCartAndBuyer(itemId);
+        CartItem item = findCartItemByIdWithAllDetails(itemId);
         checkCartItemOwnerShip(item, buyerId);
 
         cartItemRepository.deleteById(itemId);
         log.info("Cart item was deleted");
-        return getCart(buyerId);
     }
 
     public @NonNull Cart  findCartByBuyerId(Long buyerId) {
@@ -107,7 +113,7 @@ public class CartService {
         });
     }
 
-    public @NonNull Cart findByBuyerIdWithAllDetails(Long buyerId) {
+    public @NonNull Cart findCartByBuyerIdWithAllDetails(Long buyerId) {
         log.debug("Finding cart by buyer_id={} with items and products", buyerId);
         return cartRepository.findByBuyerIdWithAllDetails(buyerId).orElseThrow(() -> {
             log.warn("Cart with buyer_id {} not found in database", buyerId);
@@ -115,9 +121,9 @@ public class CartService {
         });
     }
 
-    private @NonNull CartItem findCartItemByIdWithCartAndBuyer(Long id) {
+    private @NonNull CartItem findCartItemByIdWithAllDetails(Long id) {
         log.debug("Finding cart item with id={}", id);
-        return cartItemRepository.findByIdWithCartAndBuyer(id).orElseThrow(() -> {
+        return cartItemRepository.findByBuyerIdWithAllDetails(id).orElseThrow(() -> {
             log.warn("Cart item with id {} not found in database", id);
             return new EntityNotFoundException("Not found cart item by id: " + id);
         });

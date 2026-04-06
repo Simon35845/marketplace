@@ -33,6 +33,8 @@ public class SecurityConfig {
                         .requestMatchers("/users/**").permitAll()
                         .requestMatchers("/products/**").permitAll()
                         .requestMatchers("/profile/**").authenticated()
+                        .requestMatchers("/seller/**").authenticated()
+                        .requestMatchers("/buyer/**").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())

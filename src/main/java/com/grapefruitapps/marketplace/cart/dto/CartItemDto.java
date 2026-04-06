@@ -8,6 +8,8 @@ public record CartItemDto(
         String productName,
         BigDecimal productPrice,
         Integer quantity,
-        BigDecimal subTotalPrice
+        BigDecimal subTotalPrice,
+        Long sellerId,
+        String sellerName
 ) {
 }

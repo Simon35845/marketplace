@@ -16,10 +16,12 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     @Query("""
             SELECT ci FROM CartItem ci
             LEFT JOIN FETCH ci.cart c
-            LEFT JOIN FETCH c.buyer b
+            LEFT JOIN FETCH c.buyer
+            LEFT JOIN FETCH ci.product p
+            LEFT JOIN FETCH p.seller
             WHERE ci.id = :id
             """)
-    Optional<CartItem> findByIdWithCartAndBuyer(@Param("id") Long id);
+    Optional<CartItem> findByBuyerIdWithAllDetails(@Param("id") Long id);
 
     Optional<CartItem> findByCartAndProduct(Cart cart, Product product);
 

@@ -1,6 +1,6 @@
 package com.grapefruitapps.marketplace.product.service;
 
-import com.grapefruitapps.marketplace.product.dto.ProductDetailsDto;
+import com.grapefruitapps.marketplace.product.dto.ProductDataDto;
 import com.grapefruitapps.marketplace.product.entity.Product;
 import com.grapefruitapps.marketplace.product.dto.ProductRequestDto;
 import com.grapefruitapps.marketplace.product.dto.ProductDto;
@@ -15,12 +15,13 @@ public class ProductMapper {
                 product.getPrice(),
                 product.getCategory(),
                 product.getDescription(),
-                product.getSeller() != null ? product.getSeller().getId() : null
+                product.getSeller().getId(),
+                product.getSeller().getName()
         );
     }
 
-    public ProductDetailsDto toDetailsDto(Product product) {
-        return new ProductDetailsDto(
+    public ProductDataDto toDetailsDto(Product product) {
+        return new ProductDataDto(
                 product.getId(),
                 product.getName(),
                 product.getPrice(),
