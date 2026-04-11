@@ -140,6 +140,7 @@ public class UserService {
     public UserDto updateUser(Long id, UserUpdateDto userUpdateDto) {
         log.info("Updating user with id={}", id);
         User user = findUserById(id);
+        checkUserActivity(user);
 
         if (!user.getEmail().equals(userUpdateDto.email())) {
             if (userRepository.existsByEmail(userUpdateDto.email())) {
@@ -160,6 +161,7 @@ public class UserService {
     public void changePassword(Long id, PasswordDto passwordDto) {
         log.info("Changing password from user with id={}", id);
         User user = findUserById(id);
+        checkUserActivity(user);
 
         if (!passwordEncoder.matches(passwordDto.currentPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Current password is incorrect");
@@ -178,11 +180,7 @@ public class UserService {
     public void deletionRequest(Long id) {
         log.info("Requesting deletion, user_id={}", id);
         User user = findUserById(id);
-
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Cannot request deletion for user with status "
-                    + UserStatus.TO_DELETE);
-        }
+        checkUserActivity(user);
 
         user.setStatus(UserStatus.TO_DELETE);
         log.info("User marked for deletion, id: {}", id);
@@ -210,7 +208,14 @@ public class UserService {
             throw new IllegalArgumentException("Cannot delete your own account. Use deletion request instead");
         }
 
+        User admin = findUserById(adminId);
+        checkUserActivity(admin);
         User user = findUserById(userId);
+
+        if (user.getStatus() == UserStatus.DELETED) {
+            throw new IllegalStateException("User already deleted");
+        }
+
         user.setStatus(UserStatus.DELETED);
         userRepository.save(user);
         log.info("User was deleted, id={}", userId);
@@ -224,7 +229,11 @@ public class UserService {
             throw new IllegalArgumentException("Cannot change your own role");
         }
 
+        User admin = findUserById(adminId);
+        checkUserActivity(admin);
         User user = findUserById(userId);
+        checkUserActivity(user);
+
         Role adminRole = findRoleByName("ROLE_ADMIN");
 
         if (user.getRoles().contains(adminRole)) {
@@ -244,7 +253,11 @@ public class UserService {
             throw new IllegalArgumentException("Cannot change your own role");
         }
 
+        User admin = findUserById(adminId);
+        checkUserActivity(admin);
         User user = findUserById(userId);
+        checkUserActivity(user);
+
         Role adminRole = findRoleByName("ROLE_ADMIN");
 
         if (!user.getRoles().contains(adminRole)) {

@@ -21,6 +21,15 @@ import java.util.List;
 public class AdminUserController {
     private final UserService userService;
 
+    @GetMapping("/profile")
+    public ResponseEntity<UserDataDto> getCurrentUser(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        log.info("Called getCurrentUser: id={}", userDetails.getId());
+        UserDataDto userDataDto = userService.getUserDataById(userDetails.getId());
+        return ResponseEntity.ok(userDataDto);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<UserDataDto> getUserById(@PathVariable Long id) {
         log.info("Called getUserDataById: id={}", id);
