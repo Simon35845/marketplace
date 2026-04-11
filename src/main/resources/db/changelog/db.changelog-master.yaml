@@ -25,3 +25,5 @@ databaseChangeLog:
       file: db/changelog/changeset/012-update-orders-table.yaml
   - include:
       file: db/changelog/changeset/013-insert-first-admin.yaml
+  - include:
+      file: db/changelog/changeset/014-add-role-user-for-first-admin.yaml

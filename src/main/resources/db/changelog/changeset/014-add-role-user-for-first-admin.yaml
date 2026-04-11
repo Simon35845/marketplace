@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-add-role-user-for-first-admin
+      author: grapefruitapps
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO user_roles (user_id, role_id)
+              VALUES (
+                (SELECT id FROM users WHERE username = 'first_admin'),
+                (SELECT id FROM roles WHERE name = 'ROLE_USER')
+              )
+              ON CONFLICT (user_id, role_id) DO NOTHING;
