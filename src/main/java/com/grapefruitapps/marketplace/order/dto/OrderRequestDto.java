@@ -7,8 +7,6 @@ import jakarta.validation.constraints.Pattern;
 
 public record OrderRequestDto(
         @NotNull(message = "Order type is required")
-        @Pattern(regexp = "PREPAYMENT|PAYMENT_ON_DELIVERY|PICKUP",
-                message = "Permitted order types: PREPAYMENT, PAYMENT_ON_DELIVERY, PICKUP")
         DeliveryType deliveryType,
 
         String shippingAddress

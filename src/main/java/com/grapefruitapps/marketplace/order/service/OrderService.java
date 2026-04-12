@@ -127,26 +127,13 @@ public class OrderService {
         return orders.stream().map(orderMapper::toOrderDto).toList();
     }
 
-    private OrderItem createOrderItem(CartItem cartItem, Order order) {
-        Product product = cartItem.getProduct();
-        productService.checkProductAvailability(product);
-        BigDecimal subTotal = product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
-
-        return OrderItem.builder()
-                .order(order)
-                .product(product)
-                .quantity(cartItem.getQuantity())
-                .unitPrice(product.getPrice())
-                .subTotalPrice(subTotal)
-                .build();
-    }
-
     private Order createOneOrder(Cart cart, Long sellerId, OrderRequestDto orderRequestDto) {
         log.info("Creating order: buyer_id={}, seller_id={}", cart.getBuyer().getId(), sellerId);
         Order orderToSave = Order.builder()
                 .orderNumber(generator.generate())
                 .buyer(cart.getBuyer())
                 .seller(userService.findUserById(sellerId))
+                .orderItems(new ArrayList<>())
                 .deliveryType(orderRequestDto.deliveryType())
                 .status(OrderStatus.PENDING)
                 .shippingAddress(orderRequestDto.shippingAddress())
@@ -168,15 +155,39 @@ public class OrderService {
         return orderRepository.save(orderToSave);
     }
 
+    private OrderItem createOrderItem(CartItem cartItem, Order order) {
+        Product product = cartItem.getProduct();
+        productService.checkProductAvailability(product);
+        BigDecimal subTotal = product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+
+        return OrderItem.builder()
+                .order(order)
+                .product(product)
+                .quantity(cartItem.getQuantity())
+                .unitPrice(product.getPrice())
+                .subTotalPrice(subTotal)
+                .build();
+    }
+
     @Transactional
     public OrderItemDto changeItemQuantity(Long itemId, Integer quantity, Long buyerId) {
         log.info("Updating order item quantity: item_id={}, quantity={}, buyer_id={}", itemId, quantity, buyerId);
         OrderItem item = findOrderItemByIdWithAllDetails(itemId);
+        Order order = item.getOrder();
         userService.checkUserActivity(item.getOrder().getBuyer());
         checkOrderItemOwnerShip(item, buyerId);
+        checkOrderIsPending(order);
 
+        BigDecimal unitPrice = item.getUnitPrice();
+        BigDecimal oldSubTotalPrice = item.getSubTotalPrice();
+        BigDecimal newSubTotalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
         item.setQuantity(quantity);
+        item.setSubTotalPrice(newSubTotalPrice);
+        BigDecimal difference = newSubTotalPrice.subtract(oldSubTotalPrice);
+        order.setTotalPrice(order.getTotalPrice().add(difference));
+
         orderItemRepository.save(item);
+        orderRepository.save(order);
         log.info("Order item quantity was updated");
         return orderMapper.toOrderItemDto(item);
     }
@@ -185,8 +196,12 @@ public class OrderService {
     public void deleteItem(Long itemId, Long buyerId) {
         log.info("Deleting order item: itemId={}, buyer_id={}", itemId, buyerId);
         OrderItem item = findOrderItemByIdWithAllDetails(itemId);
+        Order order = item.getOrder();
         checkOrderItemOwnerShip(item, buyerId);
+        checkOrderIsPending(order);
 
+        order.setTotalPrice(order.getTotalPrice().subtract(item.getSubTotalPrice()));
+        orderRepository.save(order);
         orderItemRepository.deleteById(itemId);
         log.info("Order item was deleted");
     }
@@ -197,10 +212,7 @@ public class OrderService {
         Order order = findOrderByIdWithAllDetails(orderId);
         userService.checkUserActivity(order.getBuyer());
         checkOrderAccess(order, buyerId);
-
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new IllegalStateException("Cannot modify order with status: " + order.getStatus());
-        }
+        checkOrderIsPending(order);
 
         order.setDeliveryType(orderRequestDto.deliveryType());
         order.setShippingAddress(orderRequestDto.shippingAddress());
@@ -215,10 +227,7 @@ public class OrderService {
         log.info("Deleting order: order_id={}, buyer_id={}", orderId, buyerId);
         Order order = findOrderByIdWithAllDetails(orderId);
         checkOrderAccess(order, buyerId);
-
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new IllegalStateException("Cannot delete order with status: " + order.getStatus());
-        }
+        checkOrderIsPending(order);
 
         orderRepository.deleteById(orderId);
         log.info("Order was deleted: order_id={}, buyer_id={}", orderId, buyerId);
@@ -300,6 +309,12 @@ public class OrderService {
         if (!order.getSeller().getId().equals(userId) && !order.getBuyer().getId().equals(userId)) {
             log.warn("User {} attempted to access order {} without permission", userId, order.getId());
             throw new AccessDeniedException("You don't have permission to access this order");
+        }
+    }
+
+    private void checkOrderIsPending(Order order) {
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new IllegalStateException("Cannot modify or delete order with status: " + order.getStatus());
         }
     }
 }

@@ -46,16 +46,16 @@ public class SellerOrderController {
 
     @GetMapping
     public ResponseEntity<List<OrderDto>> getOrdersByFilter(
-            @RequestParam(name = "orderNumber", required = false) String orderNumber,
-            @RequestParam(name = "buyerId", required = false) Long buyerId,
-            @RequestParam(name = "buyerName", required = false) String buyerName,
-            @RequestParam(name = "sellerId", required = false) Long sellerId,
-            @RequestParam(name = "sellerName", required = false) String sellerName,
-            @RequestParam(name = "deliveryType", required = false) DeliveryType deliveryType,
-            @RequestParam(name = "status", required = false) OrderStatus status,
-            @RequestParam(name = "shippingAddress", required = false) String shippingAddress,
-            @RequestParam(name = "pageSize", required = false) Integer pageSize,
-            @RequestParam(name = "pageNumber", required = false) Integer pageNumber,
+            @RequestParam(required = false) String orderNumber,
+            @RequestParam(required = false) Long buyerId,
+            @RequestParam(required = false) String buyerName,
+            @RequestParam(required = false) Long sellerId,
+            @RequestParam(required = false) String sellerName,
+            @RequestParam(required = false) DeliveryType deliveryType,
+            @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) String shippingAddress,
+            @RequestParam(required = false) Integer pageSize,
+            @RequestParam(required = false) Integer pageNumber,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         OrderFilter filter = new OrderFilter(
