@@ -2,7 +2,6 @@ package com.grapefruitapps.marketplace.product.service;
 
 import com.grapefruitapps.marketplace.product.dto.ProductDataDto;
 import com.grapefruitapps.marketplace.product.entity.Product;
-import com.grapefruitapps.marketplace.product.dto.ProductRequestDto;
 import com.grapefruitapps.marketplace.product.dto.ProductDto;
 import org.springframework.stereotype.Component;
 
@@ -34,15 +33,6 @@ public class ProductMapper {
                 product.isVisible(),
                 product.isPublished(),
                 product.getCreationDateTime().format(FORMATTER)
-        );
-    }
-
-    public Product toEntity(ProductRequestDto productRequestDto) {
-        return new Product(
-                productRequestDto.name(),
-                productRequestDto.price(),
-                productRequestDto.category(),
-                productRequestDto.description()
         );
     }
 }

@@ -11,6 +11,7 @@ public record ProductRequestDto(
 
         @NotNull(message = "Price is required")
         @Positive(message = "Price must be positive")
+        @Digits(integer = 10, fraction = 2, message = "Price must have exactly 2 decimal places")
         BigDecimal price,
 
         @Size(max = 100, message = "Category must be less than 100 characters")

@@ -16,6 +16,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -87,11 +89,16 @@ public class ProductService {
         User seller = userService.findUserById(sellerId);
         userService.checkUserActivity(seller);
 
-        Product product = productMapper.toEntity(productRequestDto);
-        product.setSeller(seller);
-        product.setVisible(false);
-        product.setPublished(false);
-        product.setCreationDateTime(LocalDateTime.now());
+        Product product = Product.builder()
+                .name(productRequestDto.name())
+                .price(productRequestDto.price().setScale(2, RoundingMode.HALF_UP))
+                .category(productRequestDto.category())
+                .description(productRequestDto.description())
+                .isVisible(false)
+                .isPublished(false)
+                .creationDateTime(LocalDateTime.now())
+                .seller(seller)
+                .build();
 
         Product savedProduct = productRepository.save(product);
         log.info("Product was created, product_id={}, seller_id={}", savedProduct.getId(), seller.getId());
@@ -114,12 +121,29 @@ public class ProductService {
         }
 
         product.setName(productRequestDto.name());
-        product.setPrice(productRequestDto.price());
+        product.setPrice(productRequestDto.price().setScale(2, RoundingMode.HALF_UP));
         product.setCategory(productRequestDto.category());
         product.setDescription(productRequestDto.description());
 
         Product savedProduct = productRepository.save(product);
         log.info("Product was updated: product_id={}, seller_id={}", productId, sellerId);
+        return productMapper.toDetailsDto(savedProduct);
+    }
+
+    @Transactional
+    public ProductDataDto changeProductPrice(
+            Long productId,
+            BigDecimal price,
+            Long sellerId
+    ) {
+        log.info("Changing product price: product_id={}, seller_id={}", productId, sellerId);
+        Product product = findProductById(productId);
+        userService.checkUserActivity(product.getSeller());
+        checkProductOwnership(product, sellerId);
+
+        product.setPrice(price.setScale(2, RoundingMode.HALF_UP));
+        Product savedProduct = productRepository.save(product);
+        log.info("Product price was changed: product_id={}, seller_id={}", productId, sellerId);
         return productMapper.toDetailsDto(savedProduct);
     }
 
@@ -162,7 +186,7 @@ public class ProductService {
         checkProductOwnership(product, sellerId);
 
         if (!product.isPublished()) {
-            throw new IllegalStateException("Unpublished product cannot be visible");
+            throw new IllegalStateException("Cannot change visibility for non-published product");
         }
 
         product.setVisible(isVisible);

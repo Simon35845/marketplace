@@ -6,14 +6,18 @@ import com.grapefruitapps.marketplace.product.dto.ProductRequestDto;
 import com.grapefruitapps.marketplace.product.service.ProductService;
 import com.grapefruitapps.marketplace.security.UserDetailsImpl;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -21,6 +25,7 @@ import java.util.List;
 @PreAuthorize("isAuthenticated()")
 @Slf4j
 @RequiredArgsConstructor
+@Validated
 public class SellerProductController {
     private final ProductService productService;
 
@@ -36,12 +41,12 @@ public class SellerProductController {
 
     @GetMapping
     public ResponseEntity<List<ProductDataDto>> getProductsByFilter(
-            @RequestParam(name = "name", required = false) String name,
-            @RequestParam(name = "category", required = false) String category,
-            @RequestParam(name = "isVisible", required = false) Boolean isVisible,
-            @RequestParam(name = "isPublished", required = false) Boolean isPublished,
-            @RequestParam(name = "pageSize", required = false) Integer pageSize,
-            @RequestParam(name = "pageNumber", required = false) Integer pageNumber,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Boolean isVisible,
+            @RequestParam(required = false) Boolean isPublished,
+            @RequestParam(required = false) Integer pageSize,
+            @RequestParam(required = false) Integer pageNumber,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         ProductDataFilter filter = new ProductDataFilter(
@@ -75,6 +80,20 @@ public class SellerProductController {
     ) {
         log.info("Called updateProduct: product_id={}, seller_id={}", id, userDetails.getId());
         ProductDataDto productDataDto = productService.updateProduct(id, productRequestDto, userDetails.getId());
+        return ResponseEntity.ok(productDataDto);
+    }
+
+    @PatchMapping("/{id}/price")
+    public ResponseEntity<ProductDataDto> changeProductPrice(
+            @PathVariable Long id,
+            @RequestParam
+            @Positive(message = "Price must be positive")
+            @Digits(integer = 10, fraction = 2, message = "Price must have exactly 2 decimal places")
+            BigDecimal price,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        log.info("Called changeProductPrice: product_id={}, seller_id={}", id, userDetails.getId());
+        ProductDataDto productDataDto = productService.changeProductPrice(id, price, userDetails.getId());
         return ResponseEntity.ok(productDataDto);
     }
 

@@ -4,9 +4,7 @@ import com.grapefruitapps.marketplace.cart.entity.CartItem;
 import com.grapefruitapps.marketplace.order.entity.OrderItem;
 import com.grapefruitapps.marketplace.user.entity.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,6 +13,8 @@ import java.util.List;
 @Entity
 @Table(name = "products")
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Getter
 @Setter
 public class Product {
@@ -25,7 +25,7 @@ public class Product {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
     @Column
@@ -52,11 +52,4 @@ public class Product {
 
     @OneToMany(mappedBy = "product")
     private List<CartItem> cartItems;
-
-    public Product(String name, BigDecimal price, String category, String description) {
-        this.name = name;
-        this.price = price;
-        this.category = category;
-        this.description = description;
-    }
 }

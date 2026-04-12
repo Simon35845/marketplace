@@ -31,7 +31,7 @@ public class PublicProductController {
             @RequestParam(name = "name", required = false) String name,
             @RequestParam(name = "category", required = false) String category,
             @RequestParam(name = "sellerId", required = false) Long sellerId,
-            @RequestParam(name = "sellerId", required = false) String sellerName,
+            @RequestParam(name = "sellerName", required = false) String sellerName,
             @RequestParam(name = "pageSize", required = false) Integer pageSize,
             @RequestParam(name = "pageNumber", required = false) Integer pageNumber
     ) {
