@@ -6,8 +6,12 @@ import com.grapefruitapps.marketplace.user.entity.Role;
 import com.grapefruitapps.marketplace.user.entity.User;
 import org.springframework.stereotype.Component;
 
+import java.time.format.DateTimeFormatter;
+
 @Component
 public class UserMapper {
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+
     public UserDto toDto(User user) {
         return new UserDto(
                 user.getId(),
@@ -15,7 +19,7 @@ public class UserMapper {
                 user.getName(),
                 user.getEmail(),
                 user.getPhone(),
-                user.getCreatedAt()
+                user.getCreatedAt().format(FORMATTER)
         );
     }
 
@@ -26,7 +30,7 @@ public class UserMapper {
                 user.getName(),
                 user.getEmail(),
                 user.getPhone(),
-                user.getCreatedAt(),
+                user.getCreatedAt().format(FORMATTER),
                 user.getStatus(),
                 user.getRoles().stream().map(Role::getName).toList()
         );

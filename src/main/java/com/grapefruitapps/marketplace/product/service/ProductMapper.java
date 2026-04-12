@@ -6,8 +6,12 @@ import com.grapefruitapps.marketplace.product.dto.ProductRequestDto;
 import com.grapefruitapps.marketplace.product.dto.ProductDto;
 import org.springframework.stereotype.Component;
 
+import java.time.format.DateTimeFormatter;
+
 @Component
 public class ProductMapper {
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+
     public ProductDto toDto(Product product) {
         return new ProductDto(
                 product.getId(),
@@ -29,7 +33,7 @@ public class ProductMapper {
                 product.getDescription(),
                 product.isVisible(),
                 product.isPublished(),
-                product.getCreationDateTime()
+                product.getCreationDateTime().format(FORMATTER)
         );
     }
 

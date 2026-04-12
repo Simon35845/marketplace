@@ -2,7 +2,6 @@ package com.grapefruitapps.marketplace.user.dto;
 
 import com.grapefruitapps.marketplace.user.entity.UserStatus;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public record UserDataDto(
@@ -11,7 +10,7 @@ public record UserDataDto(
         String name,
         String email,
         String phone,
-        LocalDateTime createdAt,
+        String creationDateTime,
         UserStatus status,
         List<String> roles
 ) {

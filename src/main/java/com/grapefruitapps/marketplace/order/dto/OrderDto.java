@@ -4,7 +4,6 @@ import com.grapefruitapps.marketplace.order.entity.DeliveryType;
 import com.grapefruitapps.marketplace.order.entity.OrderStatus;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public record OrderDto(
@@ -20,6 +19,6 @@ public record OrderDto(
         DeliveryType deliveryType,
         OrderStatus status,
         String shippingAddress,
-        LocalDateTime creationDateTime
+        String creationDateTime
 ) {
 }

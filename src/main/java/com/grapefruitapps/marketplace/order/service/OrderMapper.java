@@ -6,11 +6,14 @@ import com.grapefruitapps.marketplace.order.entity.Order;
 import com.grapefruitapps.marketplace.order.entity.OrderItem;
 import org.springframework.stereotype.Component;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
 public class OrderMapper {
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+
     public OrderItemDto toOrderItemDto(OrderItem item){
         return new OrderItemDto(
                 item.getId(),
@@ -44,7 +47,7 @@ public class OrderMapper {
                 order.getDeliveryType(),
                 order.getStatus(),
                 order.getShippingAddress(),
-                order.getCreationDateTime()
+                order.getCreationDateTime().format(FORMATTER)
         );
     }
 }

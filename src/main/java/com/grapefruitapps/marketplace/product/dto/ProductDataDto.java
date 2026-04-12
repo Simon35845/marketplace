@@ -1,7 +1,6 @@
 package com.grapefruitapps.marketplace.product.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 public record ProductDataDto(
         Long id,
@@ -11,6 +10,6 @@ public record ProductDataDto(
         String description,
         boolean isVisible,
         boolean isPublished,
-        LocalDateTime creationDateTime
+        String creationDateTime
 ) {
 }
