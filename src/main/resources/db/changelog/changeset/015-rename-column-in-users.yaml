@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-rename-column-in-users-table
+      author: grapefruitapps
+      changes:
+        - renameColumn:
+            tableName: users
+            oldColumnName: created_at
+            newColumnName: creation_date_time
+            columnDataType: timestamp

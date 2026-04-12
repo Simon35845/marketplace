@@ -36,8 +36,8 @@ public class User {
     @Column(name = "phone", unique = true)
     private String phone;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "creation_date_time", nullable = false, updatable = false)
+    private LocalDateTime creationDateTime;
 
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
