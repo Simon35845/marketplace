@@ -153,6 +153,10 @@ public class ProductService {
         Product product = findProductById(productId);
         checkProductOwnership(product, sellerId);
 
+        if (!product.getCartItems().isEmpty()) {
+            throw new IllegalStateException("Cannot delete product which related to buyer cart");
+        }
+
         if (!product.getOrderItems().isEmpty()) {
             throw new IllegalStateException("Cannot delete product which related to orders");
         }

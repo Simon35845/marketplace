@@ -11,7 +11,7 @@ public class PaginationUtil {
 
     public static Pageable getPageable(Integer filterPageSize, Integer filterPageNumber) {
         int pageSize = filterPageSize != null ? filterPageSize : DEFAULT_PAGE_SIZE;
-        int pageNumber = filterPageNumber != null ? filterPageNumber : DEFAULT_PAGE_NUMBER;
+        int pageNumber = filterPageNumber != null ? filterPageNumber - 1 : DEFAULT_PAGE_NUMBER;
         return Pageable.ofSize(pageSize).withPage(pageNumber);
     }
 }

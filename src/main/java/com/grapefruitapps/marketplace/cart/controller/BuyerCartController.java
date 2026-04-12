@@ -44,14 +44,14 @@ public class BuyerCartController {
     }
 
     @PostMapping("/items")
-    public ResponseEntity<CartDto> addItemToCart(
+    public ResponseEntity<CartItemDto> addItemToCart(
             @RequestBody @Valid CartItemRequestDto itemDto,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         log.info("Called addItemToCart: product_id={}, quantity={}, buyer_id={}",
                 itemDto.productId(), itemDto.quantity(), userDetails.getId());
-        CartDto cartDto = cartService.addItemToCart(itemDto, userDetails.getId());
-        return ResponseEntity.ok(cartDto);
+        CartItemDto cartItemDto = cartService.addItemToCart(itemDto, userDetails.getId());
+        return ResponseEntity.ok(cartItemDto);
     }
 
     @PatchMapping("/items/{id}")

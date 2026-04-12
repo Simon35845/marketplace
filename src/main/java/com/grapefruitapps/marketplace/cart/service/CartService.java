@@ -37,7 +37,7 @@ public class CartService {
         return cartMapper.toCartDto(cart);
     }
 
-    public CartItemDto getCartItemById(Long itemId, Long buyerId){
+    public CartItemDto getCartItemById(Long itemId, Long buyerId) {
         log.debug("Get cart item by item_id={}, buyer_id={}", itemId, buyerId);
         CartItem item = findCartItemByIdWithAllDetails(itemId);
         checkCartItemOwnerShip(item, buyerId);
@@ -49,12 +49,11 @@ public class CartService {
         log.debug("Clear cart by buyer_id={}", buyerId);
         Cart cart = findCartByBuyerId(buyerId);
         cartItemRepository.deleteAllByCartId(cart.getId());
-        cart.getCartItems().clear();
         log.info("Cart was cleared");
     }
 
     @Transactional
-    public CartDto addItemToCart(CartItemRequestDto itemDto, Long buyerId) {
+    public CartItemDto addItemToCart(CartItemRequestDto itemDto, Long buyerId) {
         long productId = itemDto.productId();
         int quantity = itemDto.quantity();
         log.info("Adding item to cart: product_id={}, quantity={}, buyer_id={}", productId, quantity, buyerId);
@@ -67,19 +66,20 @@ public class CartService {
         }
         productService.checkProductAvailability(product);
         Optional<CartItem> existingItem = cartItemRepository.findByCartAndProduct(cart, product);
+        CartItem item;
 
         if (existingItem.isPresent()) {
-            CartItem item = existingItem.get();
+            item = existingItem.get();
             item.setQuantity(item.getQuantity() + quantity);
             cartItemRepository.save(item);
             log.info("Increased quantity of existing item: id={}, new quantity={}",
                     item.getId(), item.getQuantity());
         } else {
-            CartItem item = new CartItem(cart, product, quantity);
-            cartItemRepository.save(item);
+            CartItem itemToSave = new CartItem(cart, product, quantity);
+            item = cartItemRepository.save(itemToSave);
             log.info("Item added to cart: id={}", item.getId());
         }
-        return getCartByBuyerId(buyerId);
+        return cartMapper.toCartItemDto(item);
     }
 
     @Transactional
@@ -105,7 +105,7 @@ public class CartService {
         log.info("Cart item was deleted");
     }
 
-    public @NonNull Cart  findCartByBuyerId(Long buyerId) {
+    public @NonNull Cart findCartByBuyerId(Long buyerId) {
         log.debug("Finding cart by buyer_id={}", buyerId);
         return cartRepository.findByBuyerId(buyerId).orElseThrow(() -> {
             log.warn("Cart with buyer_id {} not found in database", buyerId);
@@ -117,13 +117,14 @@ public class CartService {
         log.debug("Finding cart by buyer_id={} with items and products", buyerId);
         return cartRepository.findByBuyerIdWithAllDetails(buyerId).orElseThrow(() -> {
             log.warn("Cart with buyer_id {} not found in database", buyerId);
-            return new EntityNotFoundException("Not found cart for current user");
+            return new EntityNotFoundException("Not found cart for current user. " +
+                    "The cart will be created when product is added to the cart");
         });
     }
 
     private @NonNull CartItem findCartItemByIdWithAllDetails(Long id) {
         log.debug("Finding cart item with id={}", id);
-        return cartItemRepository.findByBuyerIdWithAllDetails(id).orElseThrow(() -> {
+        return cartItemRepository.findByCartItemIdWithAllDetails(id).orElseThrow(() -> {
             log.warn("Cart item with id {} not found in database", id);
             return new EntityNotFoundException("Not found cart item by id: " + id);
         });
