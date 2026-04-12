@@ -24,15 +24,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
             LEFT JOIN u.roles r
             WHERE (:roleName IS NULL OR r.name = :roleName)
             AND (:name IS NULL OR u.name = :name)
-            AND (:phone IS NULL OR u.phone = :phone)
             AND (:email IS NULL OR u.email = :email)
+            AND (:phone IS NULL OR u.phone = :phone)
             AND (:status IS NULL OR u.status = :status)
             ORDER BY u.id
             """)
     List<User> findUsersByFilter(
             @Param("name") String name,
-            @Param("phone") String phone,
             @Param("email") String email,
+            @Param("phone") String phone,
             @Param("status") UserStatus status,
             @Param("roleName") String roleName,
             Pageable pageable

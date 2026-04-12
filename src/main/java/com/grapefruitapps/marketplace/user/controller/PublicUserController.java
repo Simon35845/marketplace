@@ -26,16 +26,16 @@ public class PublicUserController {
 
     @GetMapping
     public ResponseEntity<List<UserDto>> getUsersByFilter(
-            @RequestParam(name = "name", required = false) String name,
-            @RequestParam(name = "phone", required = false) String phone,
-            @RequestParam(name = "email", required = false) String email,
-            @RequestParam(name = "pageSize", required = false) Integer pageSize,
-            @RequestParam(name = "pageNumber", required = false) Integer pageNumber
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String phone,
+            @RequestParam(required = false) Integer pageSize,
+            @RequestParam(required = false) Integer pageNumber
     ) {
         UserFilter userFilter = new UserFilter(
                 name,
-                phone,
                 email,
+                phone,
                 pageSize,
                 pageNumber
         );

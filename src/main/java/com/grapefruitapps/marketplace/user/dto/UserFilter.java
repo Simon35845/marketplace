@@ -2,8 +2,8 @@ package com.grapefruitapps.marketplace.user.dto;
 
 public record UserFilter(
         String name,
-        String phone,
         String email,
+        String phone,
         Integer pageSize,
         Integer pageNumber
 ) {

@@ -19,7 +19,7 @@ public class UserMapper {
                 user.getName(),
                 user.getEmail(),
                 user.getPhone(),
-                user.getCreatedAt().format(FORMATTER)
+                user.getCreationDateTime().format(FORMATTER)
         );
     }
 
@@ -30,7 +30,7 @@ public class UserMapper {
                 user.getName(),
                 user.getEmail(),
                 user.getPhone(),
-                user.getCreatedAt().format(FORMATTER),
+                user.getCreationDateTime().format(FORMATTER),
                 user.getStatus(),
                 user.getRoles().stream().map(Role::getName).toList()
         );

@@ -51,8 +51,8 @@ public class UserService {
 
         List<User> users = userRepository.findUsersByFilter(
                 filter.name(),
-                filter.phone(),
                 filter.email(),
+                filter.phone(),
                 UserStatus.ACTIVE,
                 "ROLE_USER",
                 pageable
@@ -68,8 +68,8 @@ public class UserService {
 
         List<User> users = userRepository.findUsersByFilter(
                 filter.name(),
-                filter.phone(),
                 filter.email(),
+                filter.phone(),
                 filter.status(),
                 filter.role(),
                 pageable
@@ -126,7 +126,7 @@ public class UserService {
                 .name(userRegisterDto.name())
                 .email(userRegisterDto.email())
                 .phone(userRegisterDto.phone())
-                .createdAt(LocalDateTime.now())
+                .creationDateTime(LocalDateTime.now())
                 .status(UserStatus.ACTIVE)
                 .roles(List.of(roleUser))
                 .build();

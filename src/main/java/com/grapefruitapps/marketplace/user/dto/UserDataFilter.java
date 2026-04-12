@@ -4,8 +4,8 @@ import com.grapefruitapps.marketplace.user.entity.UserStatus;
 
 public record UserDataFilter(
         String name,
-        String phone,
         String email,
+        String phone,
         UserStatus status,
         String role,
         Integer pageSize,
