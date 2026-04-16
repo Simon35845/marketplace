@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(MockitoExtension.class)
 class UserMapperTest {
     private UserMapper userMapper;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
     @BeforeEach
     void setUp() {
@@ -26,26 +28,25 @@ class UserMapperTest {
 
     @Test
     void toDto() {
-        Long id = 1L;
         LocalDateTime currentDateTime = LocalDateTime.now();
 
         User user = User.builder()
-                .id(id)
+                .id(1L)
                 .username("Anna_3293")
                 .name("Anna")
                 .email("anna@mail.com")
-                .createdAt(currentDateTime)
+                .phone("+721021901342")
+                .creationDateTime(currentDateTime)
                 .status(UserStatus.ACTIVE)
                 .roles(List.of(new Role("ROLE_USER")))
                 .build();
 
         UserDto expectedDto = new UserDto(
-                id,
-                "Anna_3293",
+                1L,
                 "Anna",
                 "anna@mail.com",
-                null,
-                currentDateTime
+                "+721021901342",
+                currentDateTime.format(formatter)
         );
 
         UserDto result = userMapper.toDto(user);
@@ -54,26 +55,26 @@ class UserMapperTest {
 
     @Test
     void toDataDto() {
-        Long id = 1L;
         LocalDateTime currentDateTime = LocalDateTime.now();
 
         User user = User.builder()
-                .id(id)
+                .id(1L)
                 .username("Anna_3293")
                 .name("Anna")
                 .email("anna@mail.com")
-                .createdAt(currentDateTime)
+                .phone("+721021901342")
+                .creationDateTime(currentDateTime)
                 .status(UserStatus.ACTIVE)
                 .roles(List.of(new Role("ROLE_USER")))
                 .build();
 
         UserDataDto expectedDto = new UserDataDto(
-                id,
+                1L,
                 "Anna_3293",
                 "Anna",
                 "anna@mail.com",
-                null,
-                currentDateTime,
+                "+721021901342",
+                currentDateTime.format(formatter),
                 UserStatus.ACTIVE,
                 List.of("ROLE_USER")
         );
