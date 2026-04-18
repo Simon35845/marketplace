@@ -20,6 +20,8 @@ import com.grapefruitapps.marketplace.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,8 +31,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -60,8 +61,10 @@ class OrderServiceTest {
     @InjectMocks
     private OrderService orderService;
 
-    private LocalDateTime dateTime;
-    private String formattedDateTime;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+    private final LocalDateTime currentDateTime = LocalDateTime.now();
+    private final String formattedDateTime = currentDateTime.format(FORMATTER);
+
     private User buyer;
     private User seller1;
     private User seller2;
@@ -69,73 +72,91 @@ class OrderServiceTest {
     private Product product2;
     private Product product3;
     private Cart cart;
-    private CartItem cartItem1;
-    private CartItem cartItem2;
-    private CartItem cartItem3;
-    private OrderRequestDto orderRequestDto;
-    private OrderDto orderDto1;
-    private OrderDto orderDto2;
-    private OrderItemDto orderItemDto1;
-    private OrderItemDto orderItemDto2;
-    private OrderItemDto orderItemDto3;
     private Order order1;
     private Order order2;
-    private OrderItem orderItem1;
-    private OrderItem orderItem2;
-    private OrderItem orderItem3;
+    private OrderDto orderDto1;
+    private OrderDto orderDto2;
 
     @BeforeEach
     void init() {
-        initDateTime();
         initUsers();
         initProducts();
         initCart();
         initOrders();
-        initDto();
+        initOrderDtos();
     }
 
     @Test
-    void createOrdersFromCart() {
-        when(cartService.findCartByBuyerIdWithAllDetails(buyer.getId())).thenReturn(cart);
-        doNothing().when(userService).checkUserActivity(buyer);
-        doNothing().when(cartService).checkCartIsEmpty(cart);
-
-        when(userService.findUserById(seller1.getId())).thenReturn(seller1);
-        doNothing().when(userService).checkUserActivity(seller1);
-        when(userService.findUserById(seller2.getId())).thenReturn(seller2);
-        doNothing().when(userService).checkUserActivity(seller2);
+    void groupOrdersBySellersTest() {
+        OrderRequestDto orderRequestDto = new OrderRequestDto(
+                DeliveryType.PAYMENT_ON_DELIVERY, "Belarus, Minsk");
 
         when(generator.generate()).thenReturn("Y923MB72", "B534GG3N");
-        when(productService.isProductOwner(cartItem1.getProduct(), seller1.getId())).thenReturn(true);
-        when(productService.isProductOwner(cartItem2.getProduct(), seller1.getId())).thenReturn(true);
-        when(productService.isProductOwner(cartItem3.getProduct(), seller1.getId())).thenReturn(false);
-        when(productService.isProductOwner(cartItem1.getProduct(), seller2.getId())).thenReturn(false);
-        when(productService.isProductOwner(cartItem2.getProduct(), seller2.getId())).thenReturn(false);
-        when(productService.isProductOwner(cartItem2.getProduct(), seller2.getId())).thenReturn(true);
-
         doNothing().when(productService).checkProductAvailability(any(Product.class));
-        when(orderRepository.save(any(Order.class))).thenReturn(order1, order2);
-        doNothing().when(cartService).clearCart(buyer.getId());
 
-        when(orderMapper.toOrderDto(order1)).thenReturn(orderDto1);
-        when(orderMapper.toOrderDto(order2)).thenReturn(orderDto2);
+        List<Order> actualOrders = orderService.groupOrdersBySellers(orderRequestDto, cart);
+        Order actualOrder1 = actualOrders.get(0);
+        Order actualOrder2 = actualOrders.get(1);
 
-        List<OrderDto> result = orderService.createOrdersFromCart(orderRequestDto, buyer.getId());
-        List<OrderDto> expected = List.of(orderDto1, orderDto2);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals(expected, result);
-
+        assertEquals(2, actualOrders.size());
+        assertEquals(2,actualOrder1.getOrderItems().size());
+        assertEquals(1,actualOrder2.getOrderItems().size());
+        assertEquals("Yan Lanbitz", actualOrder1.getSeller().getName());
+        assertEquals("Viktoria Berry", actualOrder2.getSeller().getName());
+        assertEquals(BigDecimal.valueOf(266.00), actualOrder1.getTotalPrice());
+        assertEquals(BigDecimal.valueOf(360.00), actualOrder2.getTotalPrice());
         verify(productService, times(3)).checkProductAvailability(any(Product.class));
-        verify(orderRepository, times(2)).save(any(Order.class));
+    }
+
+    @Test
+    void createOrdersFromCartTest() {
+        OrderRequestDto orderRequestDto = new OrderRequestDto(
+                DeliveryType.PAYMENT_ON_DELIVERY, "Belarus, Minsk");
+        Long buyerId = 1L;
+
+        when(cartService.findCartByBuyerIdWithAllDetails(buyer.getId())).thenReturn(cart);
+        doNothing().when(cartService).checkCartIsEmpty(cart);
+        doNothing().when(userService).checkUserActivity(any(User.class));
+        when(generator.generate()).thenReturn("Y923MB72", "B534GG3N");
+        doNothing().when(productService).checkProductAvailability(any(Product.class));
+        when(orderRepository.saveAll(anyList())).thenReturn(List.of(order1, order2));
+        doNothing().when(cartService).clearCart(buyer.getId());
+        when(orderMapper.toOrderDto(any(Order.class))).thenReturn(orderDto1, orderDto2);
+
+        List<OrderDto> resultOrderDtos = orderService.createOrdersFromCart(orderRequestDto, buyerId);
+
+        assertEquals(2, resultOrderDtos.size());
+        verify(productService, times(3)).checkProductAvailability(any(Product.class));
+        verify(orderRepository).saveAll(anyList());
         verify(cartService).clearCart(buyer.getId());
     }
 
-    private void initDateTime() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
-        dateTime = LocalDateTime.now();
-        formattedDateTime = dateTime.format(formatter);
+    @ParameterizedTest
+    @CsvSource({
+            "0, 120.00",
+            "2, 220.00",
+            "5, 370.00"
+    })
+    void recalculateTotalPriceTest(int newQuantity, BigDecimal expectedTotalPrice){
+        Order order = Order.builder()
+                .totalPrice(BigDecimal.valueOf(270.00))
+                .build();
+
+        OrderItem orderItem1 = OrderItem.builder()
+                .quantity(3)
+                .unitPrice(BigDecimal.valueOf(50.00))
+                .subTotalPrice(BigDecimal.valueOf(150.00))
+                .build();
+
+        OrderItem orderItem2 = OrderItem.builder()
+                .quantity(4)
+                .unitPrice(BigDecimal.valueOf(30.00))
+                .subTotalPrice(BigDecimal.valueOf(120.00))
+                .build();
+        order.setOrderItems(List.of(orderItem1, orderItem2));
+
+        orderService.recalculateTotalPrice(order, orderItem1, newQuantity);
+        assertEquals(0,expectedTotalPrice.compareTo(order.getTotalPrice()));
     }
 
     private void initUsers() {
@@ -149,9 +170,9 @@ class OrderServiceTest {
 
         seller1 = User.builder()
                 .id(2L)
-                .username("elena1882")
+                .username("yanlanbitz443")
                 .name("Yan Lanbitz")
-                .email("yandhanbitz@gmail.com")
+                .email("yanlanbitz@gmail.com")
                 .status(UserStatus.ACTIVE)
                 .build();
 
@@ -197,18 +218,32 @@ class OrderServiceTest {
         cart = new Cart(buyer);
         cart.setId(1L);
 
-        cartItem1 = new CartItem(cart, product1, 1);
-        cartItem1.setId(1L);
-        cartItem2 = new CartItem(cart, product2, 3);
-        cartItem2.setId(2L);
-        cartItem3 = new CartItem(cart, product3, 2);
-        cartItem3.setId(3L);
+        CartItem cartItem1 = CartItem.builder()
+                .id(1L)
+                .cart(cart)
+                .product(product1)
+                .quantity(1)
+                .build();
+
+        CartItem cartItem2 = CartItem.builder()
+                .id(2L)
+                .cart(cart)
+                .product(product2)
+                .quantity(3)
+                .build();
+
+        CartItem cartItem3 = CartItem.builder()
+                .id(3L)
+                .cart(cart)
+                .product(product3)
+                .quantity(2)
+                .build();
+
         cart.setCartItems(List.of(cartItem1, cartItem2, cartItem3));
     }
 
     private void initOrders() {
         order1 = Order.builder()
-                .id(1L)
                 .orderNumber("Y923MB72")
                 .buyer(buyer)
                 .seller(seller1)
@@ -216,11 +251,10 @@ class OrderServiceTest {
                 .deliveryType(DeliveryType.PAYMENT_ON_DELIVERY)
                 .status(OrderStatus.PENDING)
                 .shippingAddress("Belarus, Minsk")
-                .creationDateTime(dateTime)
+                .creationDateTime(currentDateTime)
                 .build();
 
         order2 = Order.builder()
-                .id(2L)
                 .orderNumber("B534GG3N")
                 .buyer(buyer)
                 .seller(seller2)
@@ -228,11 +262,10 @@ class OrderServiceTest {
                 .deliveryType(DeliveryType.PAYMENT_ON_DELIVERY)
                 .status(OrderStatus.PENDING)
                 .shippingAddress("Belarus, Minsk")
-                .creationDateTime(dateTime)
+                .creationDateTime(currentDateTime)
                 .build();
 
-        orderItem1 = OrderItem.builder()
-                .id(1L)
+        OrderItem orderItem1 = OrderItem.builder()
                 .order(order1)
                 .product(product1)
                 .quantity(1)
@@ -240,8 +273,7 @@ class OrderServiceTest {
                 .subTotalPrice(BigDecimal.valueOf(230.00))
                 .build();
 
-        orderItem2 = OrderItem.builder()
-                .id(2L)
+        OrderItem orderItem2 = OrderItem.builder()
                 .order(order1)
                 .product(product2)
                 .quantity(3)
@@ -249,23 +281,20 @@ class OrderServiceTest {
                 .subTotalPrice(BigDecimal.valueOf(36.00))
                 .build();
 
-        orderItem3 = OrderItem.builder()
-                .id(3L)
+        OrderItem orderItem3 = OrderItem.builder()
                 .order(order2)
                 .product(product3)
                 .quantity(2)
                 .unitPrice(BigDecimal.valueOf(180.00))
                 .subTotalPrice(BigDecimal.valueOf(360.00))
                 .build();
+
+        order1.setOrderItems(List.of(orderItem1, orderItem2));
+        order2.setOrderItems(List.of(orderItem3));
     }
 
-    private void initDto() {
-        orderRequestDto = new OrderRequestDto(
-                DeliveryType.PAYMENT_ON_DELIVERY,
-                "Belarus, Minsk"
-        );
-
-        orderItemDto1 = new OrderItemDto(
+    private void initOrderDtos() {
+        OrderItemDto orderItemDto1 = new OrderItemDto(
                 1L,
                 1L,
                 "Skateboard",
@@ -274,7 +303,7 @@ class OrderServiceTest {
                 BigDecimal.valueOf(230.00)
         );
 
-        orderItemDto2 = new OrderItemDto(
+        OrderItemDto orderItemDto2 = new OrderItemDto(
                 2L,
                 2L,
                 "Tomato seeds",
@@ -283,13 +312,13 @@ class OrderServiceTest {
                 BigDecimal.valueOf(36.00)
         );
 
-        orderItemDto3 = new OrderItemDto(
+        OrderItemDto orderItemDto3 = new OrderItemDto(
                 3L,
                 3L,
                 "Painting",
                 BigDecimal.valueOf(180.00),
                 2,
-                BigDecimal.valueOf(180.00)
+                BigDecimal.valueOf(360.00)
         );
 
         orderDto1 = new OrderDto(
