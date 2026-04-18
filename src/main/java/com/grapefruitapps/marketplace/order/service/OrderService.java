@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -98,41 +99,41 @@ public class OrderService {
 
     @Transactional
     public List<OrderDto> createOrdersFromCart(OrderRequestDto orderRequestDto, Long buyerId) {
-        log.info("Creating order from cart: buyer_id={}", buyerId);
+        log.info("Creating orders from cart: buyer_id={}", buyerId);
         Cart cart = cartService.findCartByBuyerIdWithAllDetails(buyerId);
-        userService.checkUserActivity(cart.getBuyer());
         cartService.checkCartIsEmpty(cart);
-        List<Order> orders = new ArrayList<>();
+        userService.checkUserActivity(cart.getBuyer());
 
-        if (cart.getCartItems().size() == 1) {
-            Long sellerId = cart.getCartItems().getFirst().getProduct().getSeller().getId();
-            Order createdOrder = createOneOrder(cart, sellerId, orderRequestDto);
-            orders.add(createdOrder);
-        } else {
-            Set<Long> sellerIds = new HashSet<>();
-            for (CartItem cartItem : cart.getCartItems()) {
-                sellerIds.add(cartItem.getProduct().getSeller().getId());
-            }
-
-            for (Long sellerId : sellerIds) {
-                User seller = userService.findUserById(sellerId);
-                userService.checkUserActivity(seller);
-                Order createdOrder = createOneOrder(cart, sellerId, orderRequestDto);
-                orders.add(createdOrder);
-            }
-        }
-
+        List<Order> ordersToSave = groupOrdersBySellers(orderRequestDto, cart);
+        List<Order> savedOrders = orderRepository.saveAll(ordersToSave);
         cartService.clearCart(buyerId);
-        log.info("Orders was created, count of orders: {}", orders.size());
-        return orders.stream().map(orderMapper::toOrderDto).toList();
+        log.info("Orders was saved, count of orders: {}", savedOrders.size());
+        return savedOrders.stream().map(orderMapper::toOrderDto).toList();
     }
 
-    private Order createOneOrder(Cart cart, Long sellerId, OrderRequestDto orderRequestDto) {
-        log.info("Creating order: buyer_id={}, seller_id={}", cart.getBuyer().getId(), sellerId);
-        Order orderToSave = Order.builder()
+    public List<Order> groupOrdersBySellers(OrderRequestDto orderRequestDto, Cart cart) {
+        log.debug("Grouping orders by sellers cart_id={}", cart.getId());
+        return cart.getCartItems().stream()
+                .collect(Collectors.groupingBy(item -> item.getProduct().getSeller()))
+                .entrySet().stream()
+                .map(entry -> {
+                    User seller = entry.getKey();
+                    List<CartItem> sellerItems = entry.getValue();
+                    userService.checkUserActivity(seller);
+                    return createOneOrder(cart.getBuyer(), seller, sellerItems, orderRequestDto);
+                })
+                .toList();
+    }
+
+    private Order createOneOrder(
+            User buyer, User seller,
+            List<CartItem> cartItems, OrderRequestDto orderRequestDto
+    ) {
+        log.debug("Creating one order: buyer_id={}, seller_id={}", buyer.getId(), seller.getId());
+        Order order = Order.builder()
                 .orderNumber(generator.generate())
-                .buyer(cart.getBuyer())
-                .seller(userService.findUserById(sellerId))
+                .buyer(buyer)
+                .seller(seller)
                 .orderItems(new ArrayList<>())
                 .deliveryType(orderRequestDto.deliveryType())
                 .status(OrderStatus.PENDING)
@@ -142,30 +143,28 @@ public class OrderService {
 
         BigDecimal totalPrice = BigDecimal.ZERO;
 
-        for (CartItem cartItem : cart.getCartItems()) {
-            if (productService.isProductOwner(cartItem.getProduct(), sellerId)) {
-                OrderItem orderItem = createOrderItem(cartItem, orderToSave);
-                orderToSave.getOrderItems().add(orderItem);
-                totalPrice = totalPrice.add(orderItem.getSubTotalPrice());
-            }
+        for (CartItem cartItem : cartItems) {
+            OrderItem orderItem = createOrderItem(order, cartItem);
+            order.getOrderItems().add(orderItem);
+            totalPrice = totalPrice.add(orderItem.getSubTotalPrice());
         }
 
-        orderToSave.setTotalPrice(totalPrice);
-        log.info("Order was created: buyer_id={}, seller_id={}", cart.getBuyer().getId(), sellerId);
-        return orderRepository.save(orderToSave);
+        order.setTotalPrice(totalPrice);
+        return order;
     }
 
-    private OrderItem createOrderItem(CartItem cartItem, Order order) {
+    private OrderItem createOrderItem(Order order, CartItem cartItem) {
+        log.debug("Creating order item:  order_id={}, cartItem_id={}", order.getId(), cartItem.getId());
         Product product = cartItem.getProduct();
         productService.checkProductAvailability(product);
-        BigDecimal subTotal = product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+        BigDecimal subTotalPrice = product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
 
         return OrderItem.builder()
                 .order(order)
                 .product(product)
                 .quantity(cartItem.getQuantity())
                 .unitPrice(product.getPrice())
-                .subTotalPrice(subTotal)
+                .subTotalPrice(subTotalPrice)
                 .build();
     }
 
@@ -178,14 +177,7 @@ public class OrderService {
         checkOrderItemOwnerShip(item, buyerId);
         checkOrderIsPending(order);
 
-        BigDecimal unitPrice = item.getUnitPrice();
-        BigDecimal oldSubTotalPrice = item.getSubTotalPrice();
-        BigDecimal newSubTotalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
-        item.setQuantity(quantity);
-        item.setSubTotalPrice(newSubTotalPrice);
-        BigDecimal difference = newSubTotalPrice.subtract(oldSubTotalPrice);
-        order.setTotalPrice(order.getTotalPrice().add(difference));
-
+        recalculateTotalPrice(order, item, quantity);
         orderItemRepository.save(item);
         orderRepository.save(order);
         log.info("Order item quantity was updated");
@@ -200,10 +192,26 @@ public class OrderService {
         checkOrderItemOwnerShip(item, buyerId);
         checkOrderIsPending(order);
 
-        order.setTotalPrice(order.getTotalPrice().subtract(item.getSubTotalPrice()));
+        recalculateTotalPrice(order, item, 0);
         orderRepository.save(order);
         orderItemRepository.deleteById(itemId);
         log.info("Order item was deleted");
+    }
+
+    public void recalculateTotalPrice(Order order, OrderItem item, int newQuantity) {
+        log.debug("Recalculating total price");
+        if (newQuantity == 0) {
+            BigDecimal newTotalPrice = order.getTotalPrice().subtract(item.getSubTotalPrice());
+            order.setTotalPrice(newTotalPrice);
+        } else {
+            BigDecimal unitPrice = item.getUnitPrice();
+            BigDecimal oldSubTotalPrice = item.getSubTotalPrice();
+            BigDecimal newSubTotalPrice = unitPrice.multiply(BigDecimal.valueOf(newQuantity));
+            BigDecimal newTotalPrice = order.getTotalPrice().add(newSubTotalPrice).subtract(oldSubTotalPrice);
+            item.setQuantity(newQuantity);
+            item.setSubTotalPrice(newSubTotalPrice);
+            order.setTotalPrice(newTotalPrice);
+        }
     }
 
     @Transactional

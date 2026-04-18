@@ -29,3 +29,5 @@ databaseChangeLog:
       file: db/changelog/changeset/014-add-role-user-for-first-admin.yaml
   - include:
       file: db/changelog/changeset/015-rename-column-in-users.yaml
+  - include:
+      file: db/changelog/changeset/016-update-orders-and-order-items-table.yaml

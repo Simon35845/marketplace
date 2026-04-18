@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "users")
@@ -60,4 +61,18 @@ public class User {
 
     @OneToOne(mappedBy = "buyer")
     private Cart cart;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User user)) return false;
+        if (id != null && user.id != null) return Objects.equals(id, user.id);
+        return Objects.equals(username, user.username);
+    }
+
+    @Override
+    public int hashCode() {
+        if (id != null) return Objects.hash(id);
+        return Objects.hash(username);
+    }
 }

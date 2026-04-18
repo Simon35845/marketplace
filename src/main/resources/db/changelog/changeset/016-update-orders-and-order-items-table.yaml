@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-update-orders-and-order-items-table
+      author: grapefruitapps
+      changes:
+        - modifyDataType:
+            tableName: order_items
+            columnName: unit_price
+            newDataType: decimal(10, 2)
+        - modifyDataType:
+            tableName: order_items
+            columnName: sub_total_price
+            newDataType: decimal(14, 2)
+        - modifyDataType:
+            tableName: orders
+            columnName: total_price
+            newDataType: decimal(14, 2)
