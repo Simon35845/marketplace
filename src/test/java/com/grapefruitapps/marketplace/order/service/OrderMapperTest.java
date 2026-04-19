@@ -8,9 +8,8 @@ import com.grapefruitapps.marketplace.order.entity.OrderItem;
 import com.grapefruitapps.marketplace.order.entity.OrderStatus;
 import com.grapefruitapps.marketplace.product.entity.Product;
 import com.grapefruitapps.marketplace.user.entity.User;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,16 +18,15 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ExtendWith(MockitoExtension.class)
 class OrderMapperTest {
     private final OrderMapper orderMapper = new OrderMapper();
-
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
     private final LocalDateTime creationDateTime = LocalDateTime.now();
     private final String formattedDateTime = creationDateTime.format(FORMATTER);
+    private Order order;
 
-    @Test
-    void toOrderDtoTest() {
+    @BeforeEach
+    void init(){
         User buyer = User.builder()
                 .id(1L)
                 .username("pavel2302")
@@ -55,7 +53,7 @@ class OrderMapperTest {
                 .seller(seller)
                 .build();
 
-        Order order = Order.builder()
+        order = Order.builder()
                 .id(1L)
                 .orderNumber("Y923MB72")
                 .buyer(buyer)
@@ -86,7 +84,10 @@ class OrderMapperTest {
                 .build();
 
         order.setOrderItems(List.of(orderItem1, orderItem2));
+    }
 
+    @Test
+    void toOrderDtoTest() {
         OrderItemDto orderItemDto1 = new OrderItemDto(
                 1L,
                 1L,
@@ -105,7 +106,7 @@ class OrderMapperTest {
                 BigDecimal.valueOf(36.00)
         );
 
-        OrderDto expectedOrderDto = new OrderDto(
+        OrderDto expectedDto = new OrderDto(
                 1L,
                 "Y923MB72",
                 1L,
@@ -121,7 +122,7 @@ class OrderMapperTest {
                 formattedDateTime
         );
 
-        OrderDto result = orderMapper.toOrderDto(order);
-        assertEquals(expectedOrderDto, result);
+        OrderDto actualDto = orderMapper.toOrderDto(order);
+        assertEquals(expectedDto, actualDto);
     }
 }

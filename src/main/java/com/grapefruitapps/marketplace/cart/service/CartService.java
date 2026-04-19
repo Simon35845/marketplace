@@ -27,9 +27,9 @@ import java.util.Optional;
 public class CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
+    private final CartMapper cartMapper;
     private final UserService userService;
     private final ProductService productService;
-    private final CartMapper cartMapper;
 
     public CartDto getCartByBuyerId(Long buyerId) {
         log.debug("Get cart by buyer_id={}", buyerId);
@@ -54,15 +54,13 @@ public class CartService {
 
     @Transactional
     public CartItemDto addItemToCart(CartItemRequestDto itemDto, Long buyerId) {
-        long productId = itemDto.productId();
-        int quantity = itemDto.quantity();
-        log.info("Adding item to cart: product_id={}, quantity={}, buyer_id={}", productId, quantity, buyerId);
+        log.info("Adding item to cart: product_id={}, quantity={}, buyer_id={}", itemDto.productId(), itemDto.quantity(), buyerId);
         Cart cart = getOrCreateCart(buyerId);
         userService.checkUserActivity(cart.getBuyer());
-        Product product = productService.findProductById(productId);
+        Product product = productService.findProductById(itemDto.productId());
 
         if (productService.isProductOwner(product, buyerId)) {
-            throw new IllegalArgumentException("Cannot add your own product to cart");
+            throw new IllegalStateException("Cannot add your own product to cart");
         }
         productService.checkProductAvailability(product);
         Optional<CartItem> existingItem = cartItemRepository.findByCartAndProduct(cart, product);
@@ -70,12 +68,12 @@ public class CartService {
 
         if (existingItem.isPresent()) {
             item = existingItem.get();
-            item.setQuantity(item.getQuantity() + quantity);
+            item.setQuantity(item.getQuantity() + itemDto.quantity());
             cartItemRepository.save(item);
             log.info("Increased quantity of existing item: id={}, new quantity={}",
                     item.getId(), item.getQuantity());
         } else {
-            CartItem itemToSave = new CartItem(cart, product, quantity);
+            CartItem itemToSave = new CartItem(cart, product, itemDto.quantity());
             item = cartItemRepository.save(itemToSave);
             log.info("Item added to cart: id={}", item.getId());
         }

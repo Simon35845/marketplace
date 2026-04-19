@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -74,6 +75,7 @@ class OrderServiceTest {
     private Cart cart;
     private Order order1;
     private Order order2;
+    private Order order3;
     private OrderDto orderDto1;
     private OrderDto orderDto2;
 
@@ -109,7 +111,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void createOrdersFromCartTest() {
+    void createOrdersFromCartTest_createNewOrders() {
         OrderRequestDto orderRequestDto = new OrderRequestDto(
                 DeliveryType.PAYMENT_ON_DELIVERY, "Belarus, Minsk");
         Long buyerId = 1L;
@@ -157,6 +159,19 @@ class OrderServiceTest {
 
         orderService.recalculateTotalPrice(order, orderItem1, newQuantity);
         assertEquals(0,expectedTotalPrice.compareTo(order.getTotalPrice()));
+    }
+
+    @Test
+    void placeOrderTest_orderInProgress(){
+        Long orderId = 3L;
+        Long buyerId = 1L;
+
+        when(orderRepository.findByIdWithAllDetails(orderId)).thenReturn(Optional.of(order3));
+
+        Exception exception = assertThrows(IllegalStateException.class, ()->
+                orderService.placeOrder(orderId, buyerId));
+
+        assertEquals("Cannot place order with status: " + order3.getStatus(), exception.getMessage());
     }
 
     private void initUsers() {
@@ -263,6 +278,14 @@ class OrderServiceTest {
                 .status(OrderStatus.PENDING)
                 .shippingAddress("Belarus, Minsk")
                 .creationDateTime(currentDateTime)
+                .build();
+
+        order3 = Order.builder()
+                .id(3L)
+                .buyer(buyer)
+                .seller(seller2)
+                .orderNumber("43H435FD")
+                .status(OrderStatus.IN_PROGRESS)
                 .build();
 
         OrderItem orderItem1 = OrderItem.builder()
