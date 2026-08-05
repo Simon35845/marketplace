@@ -1,4 +1,5 @@
 Marketplace application allows you to add and manage your products, add products to your cart, create, cancel, and confirm orders. This app supports user registration and login.
+
 Features:
 1. User: get user by id, get user by filter, login, create user, update user, change password, deletion request, cancel deletion request, delete user, grant admin role, revoke admin role.
 2. Product: get product by id, get product by filter, create product, update product, change product price, delete product, publish product, change product visibility.
